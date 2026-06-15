@@ -7,7 +7,7 @@
     <style>
         :root { --shell-yellow: #FFD500; --shell-red: #DD0000; --dark-blue: #1E293B; --light-bg: #F8FAFC; --card-bg: #FFFFFF; --text-main: #334155; --border-color: #E2E8F0; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--light-bg); color: var(--text-main); padding-bottom: 50px; }
+        body { background-color: var(--light-bg); color: var(--text-main); padding-bottom: 20px; }
         header { background: linear-gradient(135deg, var(--dark-blue) 0%, #0F172A 100%); color: white; padding: 25px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid var(--shell-yellow); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .header-title h1 { font-size: 24px; font-weight: 700; } .header-title p { color: #94A3B8; font-size: 14px; margin-top: 4px; }
         .status-badge { background-color: #10B981; color: white; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; transition: all 0.3s;}
@@ -51,6 +51,20 @@
         .scenario-box.option-a { border-top: 5px solid #64748B; } .scenario-box.option-b { border-top: 5px solid #10B981; }
         .scenario-box h3 { font-size: 18px; margin-bottom: 15px; } .scenario-box ul { padding-left: 20px; font-size: 14px; color: #475569; } .scenario-box li { margin-bottom: 10px; }
         .highlight-text { font-weight: bold; color: #0F172A; }
+
+        /* FOOTER CREDIT */
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 40px;
+            color: #64748B;
+            font-size: 14px;
+            border-top: 1px solid var(--border-color);
+        }
+        footer span {
+            font-weight: 600;
+            color: var(--dark-blue);
+        }
     </style>
 </head>
 <body>
@@ -66,7 +80,7 @@
     <div class="container">
         <!-- 1. INSIGHT ALERTS -->
         <div class="section-header-row" style="margin-bottom: 15px;">
-            <h2 class="section-title">🚨 Executive Red Flags (Retail Area)</h2>
+            <h2 class="section-title">🚨 Executive Summary (Retail Area)</h2>
         </div>
         <div class="alert-grid">
             <div class="alert-card">
@@ -133,10 +147,9 @@
                 <h3 style="color: #475569;">🔒 OPSI A: Pertahankan Margin Ketat (Defensive)</h3>
                 <p style="font-size: 13px; margin-bottom: 10px; color: #64748B;"><em>Fokus perlindungan profitabilitas, tata kelola teritori, dan efisiensi operasional tanpa memotong margin.</em></p>
                 <ul>
-                    <li><span class="highlight-text">Eskalasi Tata Kelola (Zero-Cost):</span> Desak Principal Shell menindak tegas distributor Sefas atas pelanggaran <em>cross-border</em> di Luwuk/Bungku. Ini langkah wajib untuk menyelamatkan volume CPA dari <em>predatory pricing</em> internal.</li>
+                    <li><span class="highlight-text">Area Supply Dicipline:</span> Desak Principal Shell menindak tegas distributor Sefas atas pelanggaran <em>cross-border</em> di Luwuk/Bungku. Ini langkah wajib untuk menyelamatkan volume CPA dari <em>predatory pricing</em> internal.</li>
                     <li><span class="highlight-text">TCO & Value-Based Selling:</span> Geser narasi tim sales dari "harga per drum" menjadi <em>Total Cost of Ownership</em> (TCO). Edukasi <em>customer</em> bahwa <em>Drain Interval</em> pelumas Shell 2x lebih panjang dibanding Pertamina/Idemitsu, sehingga menekan drastis biaya <em>downtime</em> alat berat.</li>
-                    <li><span class="highlight-text">Manuver Logistik Lokal:</span> Lakukan <em>counter-attack</em> terhadap pengiriman Castrol (dari Surabaya ke Franco Maba) dengan menggaransi <em>Security of Supply</em> lewat hub lokal CPA. Jaminan ketersediaan stok 24 jam bernilai jauh lebih tinggi bagi sektor pertambangan/konstruksi daripada sekadar selisih harga.</li>
-                    <li><span class="highlight-text">Data-Driven Account Scoring:</span> Implementasikan pemodelan segmentasi akun berbasis data. Alihkan 80% energi tim sales untuk memproteksi "Value-Sensitive Customers" (prioritas retensi tinggi), dan lepaskan sementara akun retail kecil yang murni "Price-Sensitive" hingga kuartal depan.</li>
+                    <li><span class="highlight-text">Program Loyalitas Eksklusif:</span> Membuat program loyalitas berbasis poin untuk pelanggan setia Rimula R3 MV, dengan reward seperti diskon pembelian berikutnya, merchandise eksklusif, atau akses ke layanan teknis gratis. Ini untuk memperkuat retensi tanpa harus menurunkan harga.</li>
                 </ul>
             </div>
             <div class="scenario-box option-b">
@@ -145,13 +158,18 @@
                 <ul>
                     <li><span class="highlight-text">Pemotongan Margin Taktis Lini Kedua:</span> Terapkan diskon terarah (<em>targeted discount</em>) khusus untuk Rimula R3 MV di Gorontalo demi memangkas gap psikologis Rp1 Juta melawan skema harga "All-In" (Include PPN & Ongkir) dari Pertamina.</li>
                     <li><span class="highlight-text">Skema Spot-Price Berbasis Volume:</span> Berikan <em>Special Nett Price</em> dengan syarat <em>Minimum Order Quantity</em> (MOQ) partai besar (misal: min. 40 drum sekaligus) untuk memancing dan merebut kembali <em>Lost Account</em> berpotensi tinggi seperti CV Dwi Indo Cipta.</li>
-                    <li><span class="highlight-text">Term of Payment (TOP) Bartering:</span> Berikan persetujuan turun harga <strong>hanya jika</strong> <em>customer</em> bersedia mempercepat masa pembayaran (misal: dari 45 Hari menjadi Cash/14 Hari), guna menjaga rasio arus kas (<em>cash flow</em>) perusahaan tetap sehat meski margin menipis.</li>
+                    <li><span class="highlight-text">Term of Payment (TOP) Bartering:</span> Berikan persetujuan turun harga <strong>hanya jika</strong> <em>customer</em> bersedia mempercepat masa pembayaran (misal: dari 45 Hari menjadi Cash/15 Hari), guna menjaga rasio arus kas (<em>cash flow</em>) perusahaan tetap sehat meski margin menipis.</li>
                     <li><span class="highlight-text">Substitusi Program Hold Q2:</span> Posisikan fleksibilitas harga dari GM Pricing secara eksklusif sebagai dana kompensasi atas ditariknya program marketing Principal (seperti program <em>Incip</em>) yang sedang dibekukan akibat isu makro global.</li>
                 </ul>
             </div>
         </div>
 
     </div>
+
+    <!-- FOOTER CREDIT -->
+    <footer>
+        &copy; 2026 Developed by <span>Business Analyst - CPA 01</span>. All rights reserved.
+    </footer>
 
     <script>
         const spreadsheetId = '1F9UeVxShXE7yNyWiyrJuKAHhZCR-WnCXSXPItte32Io';
