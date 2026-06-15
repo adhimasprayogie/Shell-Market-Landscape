@@ -11,8 +11,17 @@
         header { background: linear-gradient(135deg, var(--dark-blue) 0%, #0F172A 100%); color: white; padding: 25px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid var(--shell-yellow); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .header-title h1 { font-size: 24px; font-weight: 700; } .header-title p { color: #94A3B8; font-size: 14px; margin-top: 4px; }
         .status-badge { background-color: #10B981; color: white; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; transition: all 0.3s;}
-        .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
         
+        /* TABS NAVIGATION */
+        .tab-menu { display: flex; gap: 10px; margin: 25px 0; border-bottom: 2px solid var(--border-color); }
+        .tab-btn { background: transparent; border: none; padding: 12px 24px; font-size: 16px; font-weight: 600; color: #64748B; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s ease; margin-bottom: -2px; }
+        .tab-btn:hover { color: var(--dark-blue); background: #F1F5F9; border-radius: 6px 6px 0 0; }
+        .tab-btn.active { color: var(--dark-blue); border-bottom-color: var(--shell-red); }
+        .tab-content { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
         /* ALERTS SECTION */
         .alert-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
         .alert-card { background: var(--card-bg); border-left: 5px solid #EF4444; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
@@ -52,66 +61,29 @@
         .scenario-box h3 { font-size: 18px; margin-bottom: 15px; } .scenario-box ul { padding-left: 20px; font-size: 14px; color: #475569; } .scenario-box li { margin-bottom: 10px; }
         .highlight-text { font-weight: bold; color: #0F172A; }
 
+        /* MAP SECTION */
+        .map-wrapper { background: var(--card-bg); border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border-color); padding: 20px; height: 600px; display: flex; flex-direction: column; }
+        .map-wrapper iframe { flex-grow: 1; border: none; border-radius: 6px; width: 100%; height: 100%; }
+        .map-header { margin-bottom: 15px; color: var(--dark-blue); }
+
         /* FOOTER CREDIT */
-        footer {
-            text-align: center;
-            padding: 30px 20px;
-            margin-top: 40px;
-            color: #64748B;
-            font-size: 14px;
-            border-top: 1px solid var(--border-color);
-        }
-        footer span {
-            font-weight: 600;
-            color: var(--dark-blue);
-        }
+        footer { text-align: center; padding: 30px 20px; margin-top: 40px; color: #64748B; font-size: 14px; border-top: 1px solid var(--border-color); }
+        footer span { font-weight: 600; color: var(--dark-blue); }
 
-        /* =========================================
-           MOBILE RESPONSIVE MEDIA QUERIES
-           ========================================= */
+        /* MOBILE RESPONSIVE MEDIA QUERIES */
         @media screen and (max-width: 768px) {
-            /* 1. Header: Menyusun judul dan status menjadi atas-bawah */
-            header { 
-                flex-direction: column; 
-                align-items: flex-start; 
-                padding: 20px; 
-                gap: 15px; 
-            }
+            header { flex-direction: column; align-items: flex-start; padding: 20px; gap: 15px; }
             .status-badge { align-self: flex-start; }
-
-            /* 2. Alert Grid: Memaksa card peringatan jadi 1 kolom ke bawah */
-            .alert-grid { 
-                grid-template-columns: 1fr; 
-                gap: 15px; 
-            }
-
-            /* 3. Control Bar: Memisahkan tombol refresh, judul, dan kolom pencarian */
-            .control-bar { 
-                flex-direction: column; 
-                align-items: stretch; 
-            }
-            .section-header-row { 
-                justify-content: flex-start; 
-                width: 100%; 
-            }
-            .search-container { 
-                max-width: 100%; 
-                width: 100%; 
-            }
-
-            /* 4. Scenario Section: Memaksa card Opsi A dan B jadi 1 kolom ke bawah */
-            .scenario-section { 
-                grid-template-columns: 1fr; 
-            }
-
-            /* 5. Tabel Padding: Mengurangi jarak kosong di HP agar tabel sedikit lebih lega */
-            .table-container {
-                padding: 15px;
-            }
-            
-            /* Penyesuaian ukuran font untuk layar kecil */
+            .tab-menu { overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
+            .alert-grid { grid-template-columns: 1fr; gap: 15px; }
+            .control-bar { flex-direction: column; align-items: stretch; }
+            .section-header-row { justify-content: flex-start; width: 100%; }
+            .search-container { max-width: 100%; width: 100%; }
+            .scenario-section { grid-template-columns: 1fr; }
+            .table-container { padding: 15px; }
             .header-title h1 { font-size: 20px; }
             .section-title { font-size: 18px; }
+            .map-wrapper { height: 450px; }
         }
     </style>
 </head>
@@ -126,100 +98,131 @@
     </header>
 
     <div class="container">
-        <!-- 1. INSIGHT ALERTS -->
-        <div class="section-header-row" style="margin-bottom: 15px;">
-            <h2 class="section-title">🚨 Executive Summary (Retail Area)</h2>
-        </div>
-        <div class="alert-grid">
-            <div class="alert-card">
-                <h3>🔴 Channel Conflict (Sefas)</h3>
-                <p>Sefas supply Rimula R4 X seharga <strong>Rp 8.151.000</strong> di teritori CPA, merusak baseline harga Rimula R3 MV kita yang berada di <strong>Rp 11.062.000</strong>.</p>
-            </div>
-            <div class="alert-card warning">
-                <h3>🟡 Castrol Bundling Issue</h3>
-                <p>PT Bulawan Daya Lestari didekati Castrol menggunakan skema penawaran bundling langsung antara Pelumas dengan Bahan Bakar (Fuel).</p>
-            </div>
-            <div class="alert-card warning">
-                <h3>🟡 Franco Pricing Pressure</h3>
-                <p>Pertamina & Idemitsu mendominasi wilayah Gorontalo akibat pengajuan kuotasi agresif skema <strong>All-In (Include PPN & Ongkir)</strong>.</p>
-            </div>
-        </div>
-
-        <!-- 2. CONTROL BAR & TABLE -->
-        <div class="control-bar">
-            <div class="section-header-row">
-                <button class="refresh-btn" onclick="fetchData()" title="Tarik Data Terbaru">🔄</button>
-                <h2 class="section-title">Master Data Lapangan (Top 10)</h2>
-            </div>
-            <div class="search-container">
-                <input type="text" id="search-box" class="search-input" placeholder="Cari akun, sales, produk, kompetitor..." onkeyup="filterTable()">
-            </div>
-        </div>
         
-        <div class="table-container">
-            <div id="loading-text" class="loading">⏳ Menarik sinkronisasi data terbaru dari Google Sheets...</div>
-            <table id="sales-table" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>Provinsi</th>
-                        <th>Salesman</th>
-                        <th>Sektor</th>
-                        <th>Customer / Akun</th>
-                        <th style="color: var(--shell-yellow);">Potensi Volume</th>
-                        <th>Pricing Structure</th>
-                        <th>Produk Shell (SKU)</th>
-                        <th>Harga CPA</th>
-                        <th>Kompetitor</th>
-                        <th>Produk Kompetitor</th>
-                        <th>Harga Komp</th>
-                        <th>TOP</th>
-                        <th>Masalah & Info Tambahan</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body">
-                    <!-- Data Javascript -->
-                </tbody>
-            </table>
+        <div class="tab-menu">
+            <button class="tab-btn active" onclick="switchTab('tab-dashboard', this)">📊 Data & Scenarios</button>
+            <button class="tab-btn" onclick="switchTab('tab-map', this)">🗺️ Sebaran Kompetitor</button>
         </div>
 
-        <div class="action-container">
-            <button id="toggle-rows-btn" class="toggle-btn" onclick="toggleRowsDisplay()" style="display: none;">Show All Data</button>
-        </div>
-
-        <!-- 3. STRATEGIC SCENARIOS -->
-        <div class="section-header-row" style="margin-bottom: 15px; flex-direction: row;">
-            <h2 class="section-title">🔮 Business Analyst Strategic Scenarios</h2>
-        </div>
-        <div class="scenario-section">
-            <div class="scenario-box option-a">
-                <h3 style="color: #475569;">🔒 OPSI A: Pertahankan Margin Ketat (Defensive)</h3>
-                <p style="font-size: 13px; margin-bottom: 10px; color: #64748B;"><em>Fokus perlindungan profitabilitas, tata kelola teritori, dan efisiensi operasional tanpa memotong margin.</em></p>
-                <ul>
-                    <li><span class="highlight-text">Area Supply Dicipline:</span> Desak Principal Shell menindak tegas distributor Sefas atas pelanggaran <em>cross-border</em> di Luwuk/Bungku. Ini langkah wajib untuk menyelamatkan volume CPA dari <em>predatory pricing</em> internal.</li>
-                    <li><span class="highlight-text">TCO & Value-Based Selling:</span> Geser narasi tim sales dari "harga per drum" menjadi <em>Total Cost of Ownership</em> (TCO). Edukasi <em>customer</em> bahwa <em>Drain Interval</em> pelumas Shell 2x lebih panjang dibanding Pertamina/Idemitsu, sehingga menekan drastis biaya <em>downtime</em> alat berat.</li>
-                    <li><span class="highlight-text">Program Loyalitas Eksklusif:</span> Membuat program loyalitas berbasis poin untuk pelanggan setia Rimula R3 MV, dengan reward seperti diskon pembelian berikutnya, merchandise eksklusif, atau akses ke layanan teknis gratis. Ini untuk memperkuat retensi tanpa harus menurunkan harga.</li>
-                </ul>
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="section-header-row" style="margin-bottom: 15px;">
+                <h2 class="section-title">🚨 Executive Summary (Retail Area)</h2>
             </div>
-            <div class="scenario-box option-b">
-                <h3 style="color: #10B981;">💡 OPSI B: Fleksibilitas Harga (Aggressive Recovery)</h3>
-                <p style="font-size: 13px; margin-bottom: 10px; color: #64748B;"><em>Fokus pemulihan volume pada Key/Lost Account dan proteksi pangsa pasar dari penetrasi kompetitor.</em></p>
-                <ul>
-                    <li><span class="highlight-text">Pemotongan Margin Taktis Lini Kedua:</span> Terapkan diskon terarah (<em>targeted discount</em>) khusus untuk Rimula R3 MV di Gorontalo demi memangkas gap psikologis Rp1 Juta melawan skema harga "All-In" (Include PPN & Ongkir) dari Pertamina.</li>
-                    <li><span class="highlight-text">Skema Spot-Price Berbasis Volume:</span> Berikan <em>Special Nett Price</em> dengan syarat <em>Minimum Order Quantity</em> (MOQ) partai besar (misal: min. 40 drum sekaligus) untuk memancing dan merebut kembali <em>Lost Account</em> berpotensi tinggi seperti CV Dwi Indo Cipta.</li>
-                    <li><span class="highlight-text">Term of Payment (TOP) Bartering:</span> Berikan persetujuan turun harga <strong>hanya jika</strong> <em>customer</em> bersedia mempercepat masa pembayaran (misal: dari 45 Hari menjadi Cash/15 Hari), guna menjaga rasio arus kas (<em>cash flow</em>) perusahaan tetap sehat meski margin menipis.</li>
-                    <li><span class="highlight-text">Substitusi Program Hold Q2:</span> Posisikan fleksibilitas harga dari GM Pricing secara eksklusif sebagai dana kompensasi atas ditariknya program marketing Principal (seperti program <em>Incip</em>) yang sedang dibekukan akibat isu makro global.</li>
-                </ul>
+            <div class="alert-grid">
+                <div class="alert-card">
+                    <h3>🔴 Channel Conflict (Sefas)</h3>
+                    <p>Sefas supply Rimula R4 X seharga <strong>Rp 8.151.000</strong> di teritori CPA, merusak baseline harga Rimula R3 MV kita yang berada di <strong>Rp 11.062.000</strong>.</p>
+                </div>
+                <div class="alert-card warning">
+                    <h3>🟡 Castrol Bundling Issue</h3>
+                    <p>PT Bulawan Daya Lestari didekati Castrol menggunakan skema penawaran bundling langsung antara Pelumas dengan Bahan Bakar (Fuel).</p>
+                </div>
+                <div class="alert-card warning">
+                    <h3>🟡 Franco Pricing Pressure</h3>
+                    <p>Pertamina & Idemitsu mendominasi wilayah Gorontalo akibat pengajuan kuotasi agresif skema <strong>All-In (Include PPN & Ongkir)</strong>.</p>
+                </div>
+            </div>
+
+            <div class="control-bar">
+                <div class="section-header-row">
+                    <button class="refresh-btn" onclick="fetchData()" title="Tarik Data Terbaru">🔄</button>
+                    <h2 class="section-title">Master Data Lapangan (Top 10)</h2>
+                </div>
+                <div class="search-container">
+                    <input type="text" id="search-box" class="search-input" placeholder="Cari akun, sales, produk, kompetitor..." onkeyup="filterTable()">
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div id="loading-text" class="loading">⏳ Menarik sinkronisasi data terbaru dari Google Sheets...</div>
+                <table id="sales-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Provinsi</th>
+                            <th>Salesman</th>
+                            <th>Sektor</th>
+                            <th>Customer / Akun</th>
+                            <th style="color: var(--shell-yellow);">Potensi Volume</th>
+                            <th>Pricing Structure</th>
+                            <th>Produk Shell (SKU)</th>
+                            <th>Harga CPA</th>
+                            <th>Kompetitor</th>
+                            <th>Produk Kompetitor</th>
+                            <th>Harga Komp</th>
+                            <th>TOP</th>
+                            <th>Masalah & Info Tambahan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="action-container">
+                <button id="toggle-rows-btn" class="toggle-btn" onclick="toggleRowsDisplay()" style="display: none;">Show All Data</button>
+            </div>
+
+            <div class="section-header-row" style="margin-bottom: 15px; flex-direction: row;">
+                <h2 class="section-title">🔮 Business Analyst Strategic Scenarios</h2>
+            </div>
+            <div class="scenario-section">
+                <div class="scenario-box option-a">
+                    <h3 style="color: #475569;">🔒 OPSI A: Pertahankan Margin Ketat (Defensive)</h3>
+                    <p style="font-size: 13px; margin-bottom: 10px; color: #64748B;"><em>Fokus perlindungan profitabilitas, tata kelola teritori, dan efisiensi operasional tanpa memotong margin.</em></p>
+                    <ul>
+                        <li><span class="highlight-text">Area Supply Dicipline:</span> Desak Principal Shell menindak tegas distributor Sefas atas pelanggaran <em>cross-border</em> di Luwuk/Bungku. Ini langkah wajib untuk menyelamatkan volume CPA dari <em>predatory pricing</em> internal.</li>
+                        <li><span class="highlight-text">TCO & Value-Based Selling:</span> Geser narasi tim sales dari "harga per drum" menjadi <em>Total Cost of Ownership</em> (TCO). Edukasi <em>customer</em> bahwa <em>Drain Interval</em> pelumas Shell 2x lebih panjang dibanding Pertamina/Idemitsu, sehingga menekan drastis biaya <em>downtime</em> alat berat.</li>
+                        <li><span class="highlight-text">Program Loyalitas Eksklusif:</span> Membuat program loyalitas berbasis poin untuk pelanggan setia Rimula R3 MV, dengan reward seperti diskon pembelian berikutnya, merchandise eksklusif, atau akses ke layanan teknis gratis. Ini untuk memperkuat retensi tanpa harus menurunkan harga.</li>
+                    </ul>
+                </div>
+                <div class="scenario-box option-b">
+                    <h3 style="color: #10B981;">💡 OPSI B: Fleksibilitas Harga (Aggressive Recovery)</h3>
+                    <p style="font-size: 13px; margin-bottom: 10px; color: #64748B;"><em>Fokus pemulihan volume pada Key/Lost Account dan proteksi pangsa pasar dari penetrasi kompetitor.</em></p>
+                    <ul>
+                        <li><span class="highlight-text">Pemotongan Margin Taktis Lini Kedua:</span> Terapkan diskon terarah (<em>targeted discount</em>) khusus untuk Rimula R3 MV di Gorontalo demi memangkas gap psikologis Rp1 Juta melawan skema harga "All-In" (Include PPN & Ongkir) dari Pertamina.</li>
+                        <li><span class="highlight-text">Skema Spot-Price Berbasis Volume:</span> Berikan <em>Special Nett Price</em> dengan syarat <em>Minimum Order Quantity</em> (MOQ) partai besar (misal: min. 40 drum sekaligus) untuk memancing dan merebut kembali <em>Lost Account</em> berpotensi tinggi seperti CV Dwi Indo Cipta.</li>
+                        <li><span class="highlight-text">Term of Payment (TOP) Bartering:</span> Berikan persetujuan turun harga <strong>hanya jika</strong> <em>customer</em> bersedia mempercepat masa pembayaran (misal: dari 45 Hari menjadi Cash/15 Hari), guna menjaga rasio arus kas (<em>cash flow</em>) perusahaan tetap sehat meski margin menipis.</li>
+                        <li><span class="highlight-text">Substitusi Program Hold Q2:</span> Posisikan fleksibilitas harga dari GM Pricing secara eksklusif sebagai dana kompensasi atas ditariknya program marketing Principal (seperti program <em>Incip</em>) yang sedang dibekukan akibat isu makro global.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-map" class="tab-content">
+            <div class="map-wrapper">
+                <div class="map-header">
+                    <h2>🗺️ Pemetaan Agresivitas Kompetitor</h2>
+                    <p style="font-size: 14px; color: #64748B; margin-top: 5px;">Titik persebaran aktivitas kompetitor berdasarkan laporan lapangan tim sales.</p>
+                </div>
+                
+                <iframe src="https://www.google.com/maps/d/embed?mid=1bq6Ls-vup1YUbh0pnGQ-DvvQvbij-gc&ehbc=2E312F" width="640" height="480"" style="width: 100%; height: 100%; border: none; border-radius: 6px;" title="Peta Persebaran Kompetitor"></iframe>
+                
             </div>
         </div>
 
     </div>
 
-    <!-- FOOTER CREDIT -->
     <footer>
         &copy; 2026 Developed by <span>Business Analyst - CPA 01</span>. All rights reserved.
     </footer>
 
     <script>
+        // LOGIKA UNTUK BERPINDAH TAB
+        function switchTab(tabId, buttonElement) {
+            // Sembunyikan semua konten tab
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            // Hapus status aktif dari semua tombol tab
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // Tampilkan konten yang dipilih dan set tombol jadi aktif
+            document.getElementById(tabId).classList.add('active');
+            buttonElement.classList.add('active');
+        }
+
+        // LOGIKA GOOGLE SHEETS LAMA (TIDAK BERUBAH)
         const spreadsheetId = '1F9UeVxShXE7yNyWiyrJuKAHhZCR-WnCXSXPItte32Io';
         const targetSheet = 'Data Input'; 
         const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(targetSheet)}`;
@@ -264,22 +267,21 @@
                         const cells = row.c;
                         if (!cells || !cells[0]) return;
 
-                        // MAPPING TERBARU: Disesuaikan dengan posisi kolom Potensi Volume di Google Sheets
                         globalRawData.push({
-                            salesman: getVal(cells, 0),      // A
-                            provinsi: getVal(cells, 1),      // B
-                            customer: getVal(cells, 2),      // C
-                            sektor: getVal(cells, 3),        // D
-                            pricingStr: getVal(cells, 4),    // E 
-                            skuShell: getVal(cells, 5),      // F 
-                            hargaCPA: getVal(cells, 6),      // G
-                            kompetitor: getVal(cells, 7),    // H
-                            skuKomp: getVal(cells, 8),       // I
-                            hargaKomp: getVal(cells, 9),     // J
-                            top: getVal(cells, 10),          // K
-                            volume: getVal(cells, 11),       // L (Potensi Volume) - FIX!
-                            issue: getVal(cells, 12),        // M (Masalah Utama) - FIX!
-                            info: getVal(cells, 13)          // N (Informasi Tambahan) - FIX!
+                            salesman: getVal(cells, 0),      
+                            provinsi: getVal(cells, 1),      
+                            customer: getVal(cells, 2),      
+                            sektor: getVal(cells, 3),        
+                            pricingStr: getVal(cells, 4),    
+                            skuShell: getVal(cells, 5),      
+                            hargaCPA: getVal(cells, 6),      
+                            kompetitor: getVal(cells, 7),    
+                            skuKomp: getVal(cells, 8),       
+                            hargaKomp: getVal(cells, 9),     
+                            top: getVal(cells, 10),          
+                            volume: getVal(cells, 11),       
+                            issue: getVal(cells, 12),        
+                            info: getVal(cells, 13)          
                         });
                     });
 
@@ -295,7 +297,6 @@
                     document.getElementById('loading-text').style.display = 'none';
                     document.getElementById('sales-table').style.display = 'table';
                     
-                    // Logic Top 10 Button
                     if (globalRawData.length > 10) document.getElementById('toggle-rows-btn').style.display = 'block';
                     
                     statusBadge.style.backgroundColor = '#10B981';
@@ -314,7 +315,6 @@
             tableBody.innerHTML = '';
             const dataToRender = filteredData || globalRawData;
             
-            // Batasi tampilan default menjadi Top 10
             const limit = (isShowingAll || filteredData !== null) ? dataToRender.length : Math.min(10, dataToRender.length);
 
             for (let i = 0; i < limit; i++) {
