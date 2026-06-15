@@ -65,6 +65,54 @@
             font-weight: 600;
             color: var(--dark-blue);
         }
+
+        /* =========================================
+           MOBILE RESPONSIVE MEDIA QUERIES
+           ========================================= */
+        @media screen and (max-width: 768px) {
+            /* 1. Header: Menyusun judul dan status menjadi atas-bawah */
+            header { 
+                flex-direction: column; 
+                align-items: flex-start; 
+                padding: 20px; 
+                gap: 15px; 
+            }
+            .status-badge { align-self: flex-start; }
+
+            /* 2. Alert Grid: Memaksa card peringatan jadi 1 kolom ke bawah */
+            .alert-grid { 
+                grid-template-columns: 1fr; 
+                gap: 15px; 
+            }
+
+            /* 3. Control Bar: Memisahkan tombol refresh, judul, dan kolom pencarian */
+            .control-bar { 
+                flex-direction: column; 
+                align-items: stretch; 
+            }
+            .section-header-row { 
+                justify-content: flex-start; 
+                width: 100%; 
+            }
+            .search-container { 
+                max-width: 100%; 
+                width: 100%; 
+            }
+
+            /* 4. Scenario Section: Memaksa card Opsi A dan B jadi 1 kolom ke bawah */
+            .scenario-section { 
+                grid-template-columns: 1fr; 
+            }
+
+            /* 5. Tabel Padding: Mengurangi jarak kosong di HP agar tabel sedikit lebih lega */
+            .table-container {
+                padding: 15px;
+            }
+            
+            /* Penyesuaian ukuran font untuk layar kecil */
+            .header-title h1 { font-size: 20px; }
+            .section-title { font-size: 18px; }
+        }
     </style>
 </head>
 <body>
