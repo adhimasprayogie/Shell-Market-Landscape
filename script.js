@@ -363,5 +363,42 @@ function showSkeletonLoading() {
     }
 }
 
+// Fungsi untuk merender tabel Win/Loss
+function renderWinLossData(dataArray) {
+    const tbody = document.getElementById('winloss-body');
+    tbody.innerHTML = ''; // Kosongkan wadah dulu
+
+    dataArray.forEach(row => {
+        // Asumsi row memiliki properti sesuai nama kolom GSheets
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${row['Nama Customer'] || '-'}</td>
+            <td><span class="status-badge ${row['Status'] ? row['Status'].toLowerCase() : ''}">${row['Status'] || '-'}</span></td>
+            <td>${row['Kompetitor'] || '-'}</td>
+            <td>${row['Volume (L)'] || '0'}</td>
+            <td>${row['Keterangan'] || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Fungsi untuk merender tabel Pricing
+function renderPricingData(dataArray) {
+    const tbody = document.getElementById('pricing-body');
+    tbody.innerHTML = ''; 
+
+    dataArray.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${row['SKU / Produk'] || '-'}</strong></td>
+            <td>${row['Harga Kita'] || '-'}</td>
+            <td style="color: red;">${row['Harga Kompetitor'] || '-'}</td>
+            <td>${row['Nama Kompetitor'] || '-'}</td>
+            <td>${row['Selisih / Status'] || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
 // Inisiasi saat halaman pertama dimuat
 fetchData();
