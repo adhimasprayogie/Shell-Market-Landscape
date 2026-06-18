@@ -155,6 +155,10 @@ footer span { font-weight: 600; color: var(--dark-blue); }
     border-radius: 4px;
 }
 
+/* WARNA DINAMIS UNTUK STATUS SYNC */
+.status-error { background-color: #EF4444 !important; }
+.status-loading { background-color: #F59E0B !important; }
+
 /* MOBILE RESPONSIVE */
 @media screen and (max-width: 768px) {
     /* (kode responsif yang sudah ada sebelumnya biarkan saja) */
