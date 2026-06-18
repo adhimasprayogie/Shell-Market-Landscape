@@ -106,23 +106,23 @@
             </div>
             
             <div class="table-container">
-                <div id="loading-text" class="loading">⏳ Menarik sinkronisasi data terbaru dari Google Sheets...</div>
-                <table id="sales-table" style="display: none;">
+                <table id="sales-table">
                     <thead>
                         <tr>
-                            <th onclick="sortTable('provinsi')">Provinsi ↕</th>
-                            <th onclick="sortTable('salesman')">Salesman ↕</th>
+                            <th class="hide-mobile" onclick="sortTable('provinsi')">Provinsi ↕</th>
+                            <th class="hide-mobile" onclick="sortTable('salesman')">Salesman ↕</th>
                             <th onclick="sortTable('customer')">Customer / Akun ↕</th>
                             <th onclick="sortTable('volume')" style="color: var(--shell-yellow);">Volume ↕</th>
-                            <th>Produk Shell</th>
+                            <th class="hide-mobile">Produk Shell</th>
                             <th onclick="sortTable('hargaCPA')">Harga Shell ↕</th>
                             <th onclick="sortTable('kompetitor')">Kompetitor ↕</th>
-                            <th onclick="sortTable('hargaKomp')">Harga Komp ↕</th>
+                            <th class="hide-mobile" onclick="sortTable('hargaKomp')">Harga Komp ↕</th>
                             <th>Selisih Harga</th>
                             <th>Info Detail</th>
                         </tr>
                     </thead>
-                    <tbody id="table-body"></tbody>
+                    <tbody id="table-body">
+                        </tbody>
                 </table>
             </div>
 
