@@ -31,9 +31,11 @@ function formatVolume(num) {
 }
 
 function fetchData() {
-    document.getElementById('loading-text').style.display = 'block';
-    document.getElementById('sales-table').style.display = 'none';
+    // Sembunyikan tombol "Show All" selama proses loading
     document.getElementById('toggle-rows-btn').style.display = 'none';
+    
+    // Panggil efek Skeleton
+    showSkeletonLoading();
     
     const statusBadge = document.getElementById('live-status');
     const headerRefreshBtn = document.querySelector('.header-refresh-btn');
@@ -81,15 +83,12 @@ function fetchData() {
             }
 
             populateDropdowns();
-            updateKPIs();
-            doSort('volume', false); 
-            
-            document.getElementById('loading-text').style.display = 'none';
-            document.getElementById('sales-table').style.display = 'table';
+            updateKPIs(); // Ini otomatis menimpa skeleton KPI dengan angka asli
+            doSort('volume', false); // Ini otomatis menimpa skeleton tabel dengan data asli
         })
         .catch(error => {
             console.error('Error:', error);
-            document.getElementById('loading-text').innerHTML = '❌ Gagal sinkronisasi data. Cek koneksi atau nama Sheet.';
+            document.getElementById('table-body').innerHTML = '<tr><td colspan="10" style="text-align:center; color:#EF4444; padding:20px;">❌ Gagal sinkronisasi data. Cek koneksi atau nama Sheet.</td></tr>';
             
             statusBadge.innerHTML = '● SYNC FAILED <span id="last-sync-time">Cek koneksi internet</span>';
             statusBadge.style.backgroundColor = '#EF4444';
@@ -156,16 +155,16 @@ function renderTable(filteredData = null) {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><span class="badge badge-region">${item.provinsi}</span></td>
-            <td><strong>${item.salesman}</strong></td>
+            <td class="hide-mobile"><strong>${item.provinsi}</strong></td>
+            <td class="hide-mobile">${item.salesman}</td>
             <td class="wrap-text"><strong>${item.customer}</strong><br><span style="font-size:11px; color:#64748B;">Sektor: ${item.sektor}</span></td>
-            <td style="font-weight: bold; color: var(--dark-blue); text-align: center; background-color: #FEF9C3;">${formatVolume(item.volume)}</td>
-            <td class="sku-text">${item.skuShell}<br><span style="color:#64748B;">${item.pricingStr}</span></td>
+            <td style="font-weight: bold; color: var(--dark-blue); text-align: center;">${formatVolume(item.volume)}</td>
+            <td class="hide-mobile sku-text">${item.skuShell}<br><span style="color:#64748B;">${item.pricingStr}</span></td>
             <td><strong>${formatRupiah(item.hargaCPA)}</strong></td>
             <td style="color:#DD0000; font-weight:bold;">${item.kompetitor}</td>
-            <td class="sku-text">${item.skuKomp}<br><strong style="font-size:13px; color:var(--text-main); font-family:'Segoe UI',sans-serif;">${formatRupiah(item.hargaKomp)}</strong></td>
+            <td class="hide-mobile sku-text">${item.skuKomp}<br><strong style="font-size:13px; color:var(--text-main); font-family:'Segoe UI',sans-serif;">${formatRupiah(item.hargaKomp)}</strong></td>
             <td class="${gapClass}" style="font-size:11.5px;">${gapText}</td>
-            <td><button class="info-btn" onclick="alert('🔴 Isu: ${item.issue}\\n\\n🟢 Info: ${item.info}\\n\\n⏱️ TOP: ${item.top}')">Lihat Detail</button></td>
+            <td><button class="info-btn" onclick="alert('🔴 Isu: ${item.issue}\\n\\n🟢 Info: ${item.info}\\n\\n⏱️ TOP: ${item.top}')">Detail</button></td>
         `;
         tableBody.appendChild(tr);
     }
@@ -279,6 +278,42 @@ function scrollToTop() {
         top: 0,
         behavior: 'smooth'
     });
+}
+
+function showSkeletonLoading() {
+    // Inject Skeleton ke KPI
+    document.getElementById('kpi-volume').innerHTML = '<div class="skeleton skeleton-kpi"></div>';
+    document.getElementById('kpi-accounts').innerHTML = '<div class="skeleton skeleton-kpi"></div>';
+    document.getElementById('kpi-competitor').innerHTML = '<div class="skeleton skeleton-kpi"></div>';
+
+    // Inject Skeleton ke Tabel (Membuat 5 baris bayangan)
+    const tableBody = document.getElementById('table-body');
+    tableBody.innerHTML = '';
+    for(let i = 0; i < 5; i++) {
+        tableBody.innerHTML += `
+            <tr>
+                <td class="hide-mobile"><div class="skeleton skeleton-text" style="width: 80%;"></div></td>
+                <td class="hide-mobile"><div class="skeleton skeleton-text" style="width: 90%;"></div></td>
+                <td>
+                    <div class="skeleton skeleton-text" style="width: 100%;"></div>
+                    <div class="skeleton skeleton-text" style="width: 60%; height: 10px;"></div>
+                </td>
+                <td><div class="skeleton skeleton-text" style="width: 70%; margin: 0 auto;"></div></td>
+                <td class="hide-mobile">
+                    <div class="skeleton skeleton-text" style="width: 90%;"></div>
+                    <div class="skeleton skeleton-text" style="width: 50%; height: 10px;"></div>
+                </td>
+                <td><div class="skeleton skeleton-text" style="width: 80%;"></div></td>
+                <td><div class="skeleton skeleton-text" style="width: 80%;"></div></td>
+                <td class="hide-mobile">
+                    <div class="skeleton skeleton-text" style="width: 90%;"></div>
+                    <div class="skeleton skeleton-text" style="width: 70%; height: 10px;"></div>
+                </td>
+                <td><div class="skeleton skeleton-text" style="width: 100%;"></div></td>
+                <td><div class="skeleton skeleton-btn"></div></td>
+            </tr>
+        `;
+    }
 }
 
 // Inisiasi saat halaman pertama dimuat
