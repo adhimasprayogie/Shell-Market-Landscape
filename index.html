@@ -6,7 +6,7 @@
     <title>Q2 2026 Live Market Landscape - PT CPA 01</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    
+
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -60,8 +60,7 @@
                 <h2 class="section-title">🚨 Executive Summary (Retail Area)</h2>
             </div>
             <div class="alert-grid" id="alert-container">
-                // Alert cards will be dynamically inserted here based on data analysis
-            </div>
+                </div>
 
             <div class="chart-section">
                 <div class="chart-box">
@@ -146,7 +145,7 @@
                     <h2>🗺️ Pemetaan Agresivitas Kompetitor</h2>
                     <p style="font-size: 14px; color: #64748B; margin-top: 5px;">Titik persebaran aktivitas kompetitor berdasarkan laporan lapangan tim sales.</p>
                 </div>
-                <iframe src="https://www.google.com/maps/d/embed?mid=1bq6Ls-vup1YUbh0pnGQ-DvvQvbij-gc&ehbc=2E312F" width="640" height="480" style="width: 100%; height: 100%; border: none; border-radius: 6px;" title="Peta Persebaran Kompetitor"></iframe>
+                <iframe src="https://www.google.com/maps/d/embed?mid=1bq6Ls-vup1YUbh0pnGQ-DvvQvbij-gc&ehbc=2E312F" style="width: 100%; height: 100%; border: none; border-radius: 6px;" title="Peta Persebaran Kompetitor"></iframe>
             </div>
         </div>
 
@@ -154,28 +153,20 @@
             <div class="section-header-row" style="margin-bottom: 20px;">
                 <h2 class="section-title">📈 Pipeline & Churn Tracker (Q2 2026)</h2>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-                <div style="background: var(--card-bg); border-top: 4px solid #10B981; border-radius: 8px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    <h3 style="color: #10B981; margin-bottom: 15px; font-size: 16px;">🏆 WON (Berhasil Direbut)</h3>
-                    <div style="background: #F8FAFC; padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border-color);">
-                        <strong style="font-size: 14px;">PT Berkat Abadi (Gorontalo)</strong>
-                        <p style="font-size: 12px; color: #64748B; margin-top: 4px;">Merebut volume 2.000L dari Pertamina lewat program TCO.</p>
-                    </div>
-                </div>
-                <div style="background: var(--card-bg); border-top: 4px solid #F59E0B; border-radius: 8px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    <h3 style="color: #F59E0B; margin-bottom: 15px; font-size: 16px;">⚠️ AT-RISK (Terancam Lepas)</h3>
-                    <div style="background: #F8FAFC; padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border-color);">
-                        <strong style="font-size: 14px;">CV Dwi Indo Cipta (Sulut)</strong>
-                        <p style="font-size: 12px; color: #64748B; margin-top: 4px;">Kompetitor tawarkan TOP 60 Hari. Butuh intervensi GM.</p>
-                    </div>
-                </div>
-                <div style="background: var(--card-bg); border-top: 4px solid #EF4444; border-radius: 8px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    <h3 style="color: #EF4444; margin-bottom: 15px; font-size: 16px;">❌ LOST (Lepas ke Kompetitor)</h3>
-                    <div style="background: #F8FAFC; padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border-color);">
-                        <strong style="font-size: 14px;">PT Bulawan Daya Lestari</strong>
-                        <p style="font-size: 12px; color: #64748B; margin-top: 4px;">Lepas ke Castrol karena skema Bundling Fuel & Lube.</p>
-                    </div>
-                </div>
+            <div class="table-container">
+                <table id="winloss-table">
+                    <thead>
+                        <tr>
+                            <th>Nama Customer</th>
+                            <th>Status</th>
+                            <th>Kompetitor</th>
+                            <th>Volume (L)</th>
+                            <th>Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="winloss-body">
+                        </tbody>
+                </table>
             </div>
         </div>
 
@@ -184,35 +175,18 @@
                 <h2 class="section-title">💰 Head-to-Head Pricing Matrix</h2>
             </div>
             <div class="table-container">
-                <table>
+                <table id="pricing-matrix-table">
                     <thead>
                         <tr>
-                            <th>Hero Product Shell</th>
-                            <th>Harga Rata-rata Kita</th>
-                            <th>Kompetitor Dominan</th>
-                            <th>SKU Lawan</th>
-                            <th>Harga Rata-rata Lawan</th>
-                            <th>Status Persaingan</th>
+                            <th>SKU / Produk</th>
+                            <th>Harga Kita</th>
+                            <th>Harga Kompetitor</th>
+                            <th>Nama Kompetitor</th>
+                            <th>Selisih / Status</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Rimula R3 MV</strong></td>
-                            <td>Rp 11.062.000</td>
-                            <td style="color:#DD0000; font-weight:bold;">Pertamina</td>
-                            <td>Meditran SX Plus</td>
-                            <td>Rp 10.150.000</td>
-                            <td><span class="badge" style="background:#FEE2E2; color:#EF4444;">Kalah Harga (Franco)</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Rimula R4 X</strong></td>
-                            <td>Rp 13.500.000</td>
-                            <td style="color:#DD0000; font-weight:bold;">Sefas (Internal)</td>
-                            <td>Rimula R4 X</td>
-                            <td>Rp 8.151.000</td>
-                            <td><span class="badge" style="background:#FEF3C7; color:#F59E0B;">Channel Conflict</span></td>
-                        </tr>
-                    </tbody>
+                    <tbody id="pricing-body">
+                        </tbody>
                 </table>
             </div>
         </div>
