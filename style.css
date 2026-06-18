@@ -127,8 +127,37 @@ footer span { font-weight: 600; color: var(--dark-blue); }
     box-shadow: 0 6px 12px rgba(0,0,0,0.3);
 }
 
+/* SKELETON LOADER ANIMATION */
+.skeleton {
+    background: #e2e8f0;
+    background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+    background-size: 200% 100%;
+    animation: 1.5s shine linear infinite;
+    border-radius: 4px;
+}
+@keyframes shine {
+    to { background-position-x: -200%; }
+}
+.skeleton-text {
+    height: 16px;
+    margin-bottom: 6px;
+    width: 100%;
+}
+.skeleton-kpi {
+    width: 60%;
+    height: 34px;
+    margin: 0 auto;
+    border-radius: 6px;
+}
+.skeleton-btn {
+    width: 55px;
+    height: 26px;
+    border-radius: 4px;
+}
+
 /* MOBILE RESPONSIVE */
 @media screen and (max-width: 768px) {
+    /* (kode responsif yang sudah ada sebelumnya biarkan saja) */
     header { flex-direction: column; align-items: flex-start; padding: 20px; gap: 15px; }
     .sync-wrapper { align-self: flex-start; text-align: left;}
     .kpi-grid, .alert-grid, .chart-section, .scenario-section { grid-template-columns: 1fr; }
@@ -137,4 +166,7 @@ footer span { font-weight: 600; color: var(--dark-blue); }
     .table-container { padding: 15px; }
     .map-wrapper { height: 450px; }
     #backToTopBtn { bottom: 20px; right: 20px; padding: 10px; }
+    
+    /* TAMBAHKAN BARIS INI UNTUK MENYEMBUNYIKAN KOLOM DI HP */
+    .hide-mobile { display: none !important; }
 }
