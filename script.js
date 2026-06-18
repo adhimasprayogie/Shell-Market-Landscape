@@ -30,12 +30,59 @@ function formatVolume(num) {
     return new Intl.NumberFormat('id-ID').format(num);
 }
 
+// URL Khusus untuk sheet "Alerts"
+const alertSheet = 'Alerts';
+const alertUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(alertSheet)}`;
+
+function fetchAlerts() {
+    const alertContainer = document.getElementById('alert-container');
+    
+    // Inject Skeleton Loading untuk Alerts
+    alertContainer.innerHTML = `
+        <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
+        <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
+        <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
+    `;
+
+    fetch(alertUrl)
+        .then(res => res.text())
+        .then(data => {
+            const json = JSON.parse(data.substring(47, data.length - 2));
+            alertContainer.innerHTML = ''; // Kosongkan skeleton
+            
+            json.table.rows.forEach((row, index) => {
+                if(index === 0) return; // Lewati baris pertama (header)
+                const cells = row.c;
+                if (!cells || !cells[0]) return;
+
+                const tipe = cells[0]?.v || '🟡';
+                const judul = cells[1]?.v || 'Isu Baru';
+                const deskripsi = cells[2]?.v || 'Detail isu belum tersedia.';
+                const isWarning = tipe.includes('🟡') ? 'warning' : '';
+
+                alertContainer.innerHTML += `
+                    <div class="alert-card ${isWarning}">
+                        <h3>${tipe} ${judul}</h3>
+                        <p>${deskripsi}</p>
+                    </div>
+                `;
+            });
+        })
+        .catch(err => {
+            console.error('Error fetching alerts:', err);
+            alertContainer.innerHTML = '<div style="grid-column: 1/-1; color: var(--shell-red); font-weight: bold;">❌ Gagal memuat Executive Summary. Pastikan ada Sheet bernama "Alerts".</div>';
+        });
+}
+
 function fetchData() {
     // Sembunyikan tombol "Show All" selama proses loading
     document.getElementById('toggle-rows-btn').style.display = 'none';
     
     // Panggil efek Skeleton
     showSkeletonLoading();
+
+    // Panggil fungsi Alert dari Sheet kedua
+    fetchAlerts();
     
     const statusBadge = document.getElementById('live-status');
     const headerRefreshBtn = document.querySelector('.header-refresh-btn');
