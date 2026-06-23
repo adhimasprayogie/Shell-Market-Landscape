@@ -30,14 +30,11 @@ function formatVolume(num) {
     return new Intl.NumberFormat('id-ID').format(num);
 }
 
-// URL Khusus untuk sheet "Alerts"
 const alertSheet = 'Alerts';
 const alertUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(alertSheet)}`;
 
 function fetchAlerts() {
     const alertContainer = document.getElementById('alert-container');
-    
-    // Inject Skeleton Loading untuk Alerts
     alertContainer.innerHTML = `
         <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
         <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
@@ -48,10 +45,10 @@ function fetchAlerts() {
         .then(res => res.text())
         .then(data => {
             const json = JSON.parse(data.substring(47, data.length - 2));
-            alertContainer.innerHTML = ''; // Kosongkan skeleton
+            alertContainer.innerHTML = ''; 
             
             json.table.rows.forEach((row, index) => {
-                if(index === 0) return; // Lewati baris pertama (header)
+                if(index === 0) return; 
                 const cells = row.c;
                 if (!cells || !cells[0]) return;
 
@@ -70,18 +67,13 @@ function fetchAlerts() {
         })
         .catch(err => {
             console.error('Error fetching alerts:', err);
-            alertContainer.innerHTML = '<div style="grid-column: 1/-1; color: var(--shell-red); font-weight: bold;">❌ Gagal memuat Executive Summary. Pastikan ada Sheet bernama "Alerts".</div>';
+            alertContainer.innerHTML = '<div style="grid-column: 1/-1; color: var(--shell-red); font-weight: bold;">❌ Gagal memuat Executive Summary.</div>';
         });
 }
 
 function fetchData() {
-    // Sembunyikan tombol "Show All" selama proses loading
     document.getElementById('toggle-rows-btn').style.display = 'none';
-    
-    // Panggil efek Skeleton
     showSkeletonLoading();
-
-    // Panggil fungsi Alert dari Sheet kedua
     fetchAlerts();
     
     const statusBadge = document.getElementById('live-status');
@@ -92,8 +84,6 @@ function fetchData() {
     
     if (headerRefreshBtn) {
         headerRefreshBtn.classList.add('spinning');
-        headerRefreshBtn.style.color = '#F59E0B';
-        headerRefreshBtn.style.borderColor = '#F59E0B';
     }
 
     fetch(url)
@@ -125,13 +115,11 @@ function fetchData() {
 
             if (headerRefreshBtn) {
                 headerRefreshBtn.classList.remove('spinning');
-                headerRefreshBtn.style.color = '#10B981';
-                headerRefreshBtn.style.borderColor = '#10B981';
             }
 
             populateDropdowns();
-            updateKPIs(); // Ini otomatis menimpa skeleton KPI dengan angka asli
-            doSort('volume', false); // Ini otomatis menimpa skeleton tabel dengan data asli
+            updateKPIs(); 
+            doSort('volume', false); 
         })
         .catch(error => {
             console.error('Error:', error);
@@ -142,8 +130,6 @@ function fetchData() {
 
             if (headerRefreshBtn) {
                 headerRefreshBtn.classList.remove('spinning');
-                headerRefreshBtn.style.color = '#EF4444';
-                headerRefreshBtn.style.borderColor = '#EF4444';
             }
         });
 }
@@ -204,11 +190,11 @@ function renderTable(filteredData = null) {
         tr.innerHTML = `
             <td class="hide-mobile"><strong>${item.provinsi}</strong></td>
             <td class="hide-mobile">${item.salesman}</td>
-            <td class="wrap-text"><strong>${item.customer}</strong><br><span style="font-size:11px; color:#64748B;">Sektor: ${item.sektor}</span></td>
-            <td style="font-weight: bold; color: var(--dark-blue); text-align: center;">${formatVolume(item.volume)}</td>
-            <td class="hide-mobile sku-text">${item.skuShell}<br><span style="color:#64748B;">${item.pricingStr}</span></td>
+            <td class="wrap-text"><strong style="color:var(--cpa-dark);">${item.customer}</strong><br><span style="font-size:11px; color:var(--text-muted);">Sektor: ${item.sektor}</span></td>
+            <td style="font-weight: bold; color: var(--cpa-blue); text-align: center; font-size:14px;">${formatVolume(item.volume)}</td>
+            <td class="hide-mobile sku-text">${item.skuShell}<br><span style="color:var(--text-muted);">${item.pricingStr}</span></td>
             <td><strong>${formatRupiah(item.hargaCPA)}</strong></td>
-            <td style="color:#DD0000; font-weight:bold;">${item.kompetitor}</td>
+            <td style="color:var(--shell-red); font-weight:bold;">${item.kompetitor}</td>
             <td class="hide-mobile sku-text">${item.skuKomp}<br><strong style="font-size:13px; color:var(--text-main); font-family:'Segoe UI',sans-serif;">${formatRupiah(item.hargaKomp)}</strong></td>
             <td class="${gapClass}" style="font-size:11.5px;">${gapText}</td>
             <td><button class="info-btn" onclick="alert('🔴 Isu: ${item.issue}\\n\\n🟢 Info: ${item.info}\\n\\n⏱️ TOP: ${item.top}')">Detail</button></td>
@@ -281,13 +267,13 @@ function renderCharts(data) {
         type: 'doughnut',
         data: {
             labels: Object.keys(kompCount),
-            datasets: [{ data: Object.values(kompCount), backgroundColor: ['#DD0000', '#10B981', '#3B82F6', '#F59E0B', '#8B5CF6'], borderWidth: 2, borderColor: '#ffffff' }]
+            datasets: [{ data: Object.values(kompCount), backgroundColor: ['#DD0000', '#1E40AF', '#FFD500', '#10B981', '#8B5CF6'], borderWidth: 0 }]
         },
         options: { 
-            responsive: true, maintainAspectRatio: false, 
+            responsive: true, maintainAspectRatio: false, cutout: '65%',
             plugins: { 
-                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
-                datalabels: { color: '#ffffff', font: { weight: 'bold', size: 14 }, formatter: (value) => { return value > 0 ? value : ''; } }
+                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 12, family: 'Segoe UI' } } },
+                datalabels: { color: '#ffffff', font: { weight: 'bold', size: 13 }, formatter: (value) => { return value > 0 ? value : ''; }, textShadowColor: '#000', textShadowBlur: 3 }
             } 
         }
     });
@@ -297,22 +283,24 @@ function renderCharts(data) {
         type: 'bar',
         data: {
             labels: Object.keys(provVol),
-            datasets: [{ label: 'Volume', data: Object.values(provVol), backgroundColor: '#FFD500', borderRadius: 4 }]
+            datasets: [{ label: 'Volume', data: Object.values(provVol), backgroundColor: '#1E40AF', borderRadius: 6 }]
         },
         options: { 
-            responsive: true, maintainAspectRatio: false, layout: { padding: { top: 20 } }, scales: { y: { beginAtZero: true } },
+            responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25 } }, 
+            scales: { 
+                y: { beginAtZero: true, grid: { borderDash: [4, 4] } },
+                x: { grid: { display: false } }
+            },
             plugins: {
                 legend: { display: false }, 
-                datalabels: { anchor: 'end', align: 'top', color: '#1E293B', font: { weight: 'bold', size: 11 }, formatter: (value) => { return value === 0 ? '' : new Intl.NumberFormat('id-ID').format(value); } }
+                datalabels: { anchor: 'end', align: 'top', color: '#1E3A8A', font: { weight: 'bold', size: 12 }, formatter: (value) => { return value === 0 ? '' : new Intl.NumberFormat('id-ID').format(value); } }
             }
         }
     });
 }
 
-// LOGIKA UNTUK TOMBOL BACK TO TOP
 window.onscroll = function() {
     const backToTopBtn = document.getElementById("backToTopBtn");
-    // Tampilkan tombol ketika user scroll 300px ke bawah
     if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
         backToTopBtn.style.display = "flex";
     } else {
@@ -328,12 +316,10 @@ function scrollToTop() {
 }
 
 function showSkeletonLoading() {
-    // Inject Skeleton ke KPI
     document.getElementById('kpi-volume').innerHTML = '<div class="skeleton skeleton-kpi"></div>';
     document.getElementById('kpi-accounts').innerHTML = '<div class="skeleton skeleton-kpi"></div>';
     document.getElementById('kpi-competitor').innerHTML = '<div class="skeleton skeleton-kpi"></div>';
 
-    // Inject Skeleton ke Tabel (Membuat 5 baris bayangan)
     const tableBody = document.getElementById('table-body');
     tableBody.innerHTML = '';
     for(let i = 0; i < 5; i++) {
@@ -362,43 +348,3 @@ function showSkeletonLoading() {
         `;
     }
 }
-
-// Fungsi untuk merender tabel Win/Loss
-function renderWinLossData(dataArray) {
-    const tbody = document.getElementById('winloss-body');
-    tbody.innerHTML = ''; // Kosongkan wadah dulu
-
-    dataArray.forEach(row => {
-        // Asumsi row memiliki properti sesuai nama kolom GSheets
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${row['Nama Customer'] || '-'}</td>
-            <td><span class="status-badge ${row['Status'] ? row['Status'].toLowerCase() : ''}">${row['Status'] || '-'}</span></td>
-            <td>${row['Kompetitor'] || '-'}</td>
-            <td>${row['Volume (L)'] || '0'}</td>
-            <td>${row['Keterangan'] || '-'}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// Fungsi untuk merender tabel Pricing
-function renderPricingData(dataArray) {
-    const tbody = document.getElementById('pricing-body');
-    tbody.innerHTML = ''; 
-
-    dataArray.forEach(row => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>${row['SKU / Produk'] || '-'}</strong></td>
-            <td>${row['Harga Kita'] || '-'}</td>
-            <td style="color: red;">${row['Harga Kompetitor'] || '-'}</td>
-            <td>${row['Nama Kompetitor'] || '-'}</td>
-            <td>${row['Selisih / Status'] || '-'}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// Inisiasi saat halaman pertama dimuat
-fetchData();
