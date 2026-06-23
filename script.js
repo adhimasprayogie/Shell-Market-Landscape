@@ -41,6 +41,12 @@ function fetchAlerts() {
         <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
     `;
 
+    // KODE ANTI-CACHE 
+    const noCacheAlertUrl = alertUrl + '&_=' + new Date().getTime();
+
+    fetch(noCacheAlertUrl) // Gunakan URL baru yang ada time-stamp nya
+        .then(res => res.text())
+
     fetch(alertUrl)
         .then(res => res.text())
         .then(data => {
@@ -85,6 +91,12 @@ function fetchData() {
     if (headerRefreshBtn) {
         headerRefreshBtn.classList.add('spinning');
     }
+
+    // KODE ANTI-CACHE
+    const noCacheUrl = url + '&_=' + new Date().getTime();
+
+    fetch(noCacheUrl) // Gunakan URL baru
+        .then(res => res.text())
 
     fetch(url)
         .then(res => res.text())
@@ -348,3 +360,11 @@ function showSkeletonLoading() {
         `;
     }
 }
+
+// ==========================================
+// TRIGGER OTOMATIS SAAT HALAMAN DIBUKA
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Jalankan penarikan data secara otomatis tanpa harus diklik
+    fetchData(); 
+});
