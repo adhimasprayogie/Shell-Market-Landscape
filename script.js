@@ -205,13 +205,18 @@ function fetchData() {
 function updateKPIs() {
     let totalVol = 0;
     let kompCount = {};
+    let uniqueCustomers = new Set();
     globalRawData.forEach(d => {
         totalVol += d.volume;
         let k = d.kompetitor.trim();
         if(k && k !== '-') { kompCount[k] = (kompCount[k] || 0) + 1; }
+
+        if (d.customer && d.customer !== '-') {
+            uniqueCustomers.add(d.customer.trim().toUpperCase());
+        }
     });
     document.getElementById('kpi-volume').innerText = formatVolume(totalVol) + " L";
-    document.getElementById('kpi-accounts').innerText = globalRawData.length;
+    document.getElementById('kpi-accounts').innerText = uniqueCustomers.size;
 
     let topKomp = "-"; let maxCount = 0;
     for (let k in kompCount) { if(kompCount[k] > maxCount) { maxCount = kompCount[k]; topKomp = k; } }
@@ -238,10 +243,10 @@ function renderTable(filteredData = null) {
     const dataToRender = filteredData || globalRawData;
     
     const btn = document.getElementById('toggle-rows-btn');
-    if (!filteredData && dataToRender.length > 10) { btn.style.display = 'block'; } 
+    if (!filteredData && dataToRender.length > 5) { btn.style.display = 'block'; } 
     else { btn.style.display = 'none'; }
 
-    const limit = (isShowingAll || filteredData !== null) ? dataToRender.length : Math.min(10, dataToRender.length);
+    const limit = (isShowingAll || filteredData !== null) ? dataToRender.length : Math.min(5, dataToRender.length);
 
     for (let i = 0; i < limit; i++) {
         const item = dataToRender[i];
@@ -254,6 +259,10 @@ function renderTable(filteredData = null) {
             else { gapText = "Harga Sama"; }
         }
 
+        let safeIssue = String(item.issue || '-').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+        let safeInfo = String(item.info || '-').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+        let safeTop = String(item.top || '-').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="hide-mobile"><strong>${item.provinsi}</strong></td>
@@ -265,7 +274,9 @@ function renderTable(filteredData = null) {
             <td style="color:var(--shell-red); font-weight:bold;">${item.kompetitor}</td>
             <td class="hide-mobile sku-text">${item.skuKomp}<br><strong style="font-size:13px; color:var(--text-main); font-family:'Segoe UI',sans-serif;">${formatRupiah(item.hargaKomp)}</strong></td>
             <td class="${gapClass}" style="font-size:11.5px;">${gapText}</td>
-            <td><button class="info-btn" onclick="alert('🔴 Isu: ${item.issue}\\n\\n🟢 Info: ${item.info}\\n\\n⏱️ TOP: ${item.top}')">Detail</button></td>
+            <td style="vertical-align: middle; text-align: center;">
+                <button class="info-btn" onclick="showCustomModal('${safeIssue}', '${safeInfo}', '${safeTop}')">Detail</button>
+            </td>
         `;
         tableBody.appendChild(tr);
     }
@@ -715,3 +726,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Jalankan penarikan data secara otomatis tanpa harus diklik
     fetchData(); 
 });
+
+// ==========================================
+// FUNGSI CUSTOM MODAL DETAIL INFO
+// ==========================================
+function showCustomModal(issue, info, top) {
+    document.getElementById('modal-issue').textContent = issue || '-';
+    document.getElementById('modal-info').textContent = info || '-';
+    document.getElementById('modal-top').textContent = top || '-';
+    document.getElementById('custom-modal').classList.add('show');
+}
+
+function closeCustomModal() {
+    document.getElementById('custom-modal').classList.remove('show');
+}
+
+// Fitur tambahan: Tutup modal kalau user klik di area luar kotak putih
+window.onclick = function(event) {
+    const modal = document.getElementById('custom-modal');
+    if (event.target === modal) { closeCustomModal(); }
+};
