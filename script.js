@@ -10,6 +10,7 @@ const targetSheet = 'Data Input';
 const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(targetSheet)}`;
 
 let globalRawData = [];
+let globalWinLossData = [];
 let isShowingAll = false;
 let currentSort = { column: 'volume', asc: false };
 let chartInstances = {};
@@ -111,15 +112,18 @@ function fetchWinLossData() {
                 row.c.forEach((cell, colIndex) => {
                     let headerName = headers[colIndex];
                     if (headerName) {
-                        // Ambil format asli dari Spreadsheet (misal: "1.045,00") atau teks biasa
                         rowObj[headerName] = (cell && cell.f) ? cell.f : ((cell && cell.v !== null) ? cell.v : "");
                     }
                 });
                 winLossArray.push(rowObj);
             }
 
-            // Eksekusi fungsi render pembuat tabel yang sudah kamu buat sebelumnya!
-            renderWinLossData(winLossArray);
+            // ==========================================
+            // KODE YANG SEBELUMNYA HILANG ADA DI BAWAH INI
+            // ==========================================
+            globalWinLossData = winLossArray; // Simpan data ke variabel Global!
+            renderWinLossData(globalWinLossData); // Render tabel Win/Loss
+            
         })
         .catch(err => {
             console.error("Gagal menarik data Win/Loss:", err);
@@ -295,30 +299,63 @@ function toggleRowsDisplay() {
 
 function filterTable() {
     const query = document.getElementById('search-box').value.toLowerCase().trim();
-    const provF = document.getElementById('filter-prov').value;
-    const kompF = document.getElementById('filter-komp').value;
+    const provF = document.getElementById('filter-prov').value.toLowerCase().trim();
+    const kompF = document.getElementById('filter-komp').value.toLowerCase().trim();
 
+    // JIKA TIDAK ADA FILTER (Tampilkan Semua)
     if (query === '' && provF === '' && kompF === '') {
         renderTable(); 
+        if (globalWinLossData.length > 0) renderWinLossData(globalWinLossData);
         return;
     }
 
-    const filtered = globalRawData.filter(item => {
-        const safeStr = (str) => str ? str.toString().toLowerCase() : '';
-        const matchQ = safeStr(item.salesman).includes(query) || safeStr(item.provinsi).includes(query) ||
-                       safeStr(item.customer).includes(query) || safeStr(item.sektor).includes(query) ||
-                       safeStr(item.kompetitor).includes(query) || safeStr(item.skuShell).includes(query);
-        const matchP = provF === "" || item.provinsi === provF;
-        const matchK = kompF === "" || item.kompetitor === kompF;
+    // 1. FILTER DATA TABEL UTAMA (Data Input)
+    const filteredMain = globalRawData.filter(item => {
+        const safeStr = (str) => str ? str.toString().toLowerCase().trim() : '';
+        
+        const matchQ = query === "" || 
+                       safeStr(item.salesman).includes(query) || 
+                       safeStr(item.provinsi).includes(query) ||
+                       safeStr(item.customer).includes(query) || 
+                       safeStr(item.sektor).includes(query) ||
+                       safeStr(item.kompetitor).includes(query) || 
+                       safeStr(item.skuShell).includes(query);
+                       
+        const matchP = provF === "" || safeStr(item.provinsi) === provF;
+        const matchK = kompF === "" || safeStr(item.kompetitor) === kompF;
+        
         return matchQ && matchP && matchK;
     });
-    renderTable(filtered); 
+    
+    // Render Ulang Tabel Utama & Pricing Matrix Chart
+    renderTable(filteredMain); 
+
+    // 2. FILTER DATA WIN/LOSS
+    if (globalWinLossData.length > 0) {
+        const filteredWL = globalWinLossData.filter(item => {
+            const safeStr = (str) => str ? str.toString().toLowerCase().trim() : '';
+            
+            // Cek pencarian teks di Nama Customer atau Keterangan
+            const matchQ = query === "" || 
+                           safeStr(item['Nama Customer']).includes(query) || 
+                           safeStr(item['Keterangan']).includes(query);
+            
+            // Cek kesamaan Provinsi dan Kompetitor (Menggunakan exact match yang sudah di-trim)
+            const matchP = provF === "" || safeStr(item['Provinsi']) === provF;
+            const matchK = kompF === "" || safeStr(item['Kompetitor']) === kompF;
+            
+            return matchQ && matchP && matchK;
+        });
+        
+        // Render Ulang KPI, Chart, dan Tabel Win/Loss sesuai filter
+        renderWinLossData(filteredWL);
+    }
 }
 
 function renderCharts(data) {
     if(chartInstances.pie) chartInstances.pie.destroy();
     if(chartInstances.bar) chartInstances.bar.destroy();
-    Chart.register(ChartDataLabels);
+    if(typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
 
     let kompCount = {};
     data.forEach(d => { if(d.kompetitor && d.kompetitor !== '-') kompCount[d.kompetitor] = (kompCount[d.kompetitor] || 0) + 1; });
@@ -361,6 +398,7 @@ function renderCharts(data) {
             }
         }
     });
+    renderPricingMatrix(data);
 }
 
 function renderWinLossData(dataArray) {
@@ -519,6 +557,105 @@ function renderWinLossData(dataArray) {
             }
         });
     }
+}
+
+// Fungsi khusus merender Pricing Matrix Bubble Chart
+function renderPricingMatrix(data) {
+    const canvas = document.getElementById('pricingBubbleChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    // Hancurkan chart lama jika ada agar tidak tumpang tindih
+    if(chartInstances.bubble) chartInstances.bubble.destroy();
+
+    // 1. Agregasi Data (Gabungkan berdasarkan Area dan Kompetitor)
+    const summary = data.reduce((acc, d) => {
+        // Ambil data yang punya harga & kompetitor saja
+        if (d.hargaCPA > 0 && d.hargaKomp > 0 && d.kompetitor && d.kompetitor !== '-') {
+            let key = `${d.provinsi}_${d.kompetitor}`;
+            if (!acc[key]) {
+                acc[key] = { area: d.provinsi, komp: d.kompetitor, vol: 0, sumCPA: 0, sumKomp: 0, count: 0 };
+            }
+            acc[key].vol += d.volume;
+            acc[key].sumCPA += d.hargaCPA;
+            acc[key].sumKomp += d.hargaKomp;
+            acc[key].count++;
+        }
+        return acc;
+    }, {});
+
+    // 2. Palet Warna Khusus Kompetitor
+    const colorPalette = {
+        'Pertamina': 'rgba(239, 68, 68, 0.7)', // Merah
+        'Castrol': 'rgba(16, 185, 129, 0.7)',  // Hijau
+        'Sefas': 'rgba(245, 158, 11, 0.7)',    // Kuning
+        'Idemitsu': 'rgba(59, 130, 246, 0.7)'  // Biru
+    };
+    const defaultColor = 'rgba(100, 116, 139, 0.7)'; // Abu-abu
+
+    // 3. Susun data untuk Chart.js
+    let datasetsObj = {};
+    Object.values(summary).forEach(item => {
+        let avgCPA = item.sumCPA / item.count;
+        let avgKomp = item.sumKomp / item.count;
+        let selisih = avgKomp - avgCPA; // Jika Positif, kita lebih murah
+
+        if (!datasetsObj[item.komp]) {
+            datasetsObj[item.komp] = {
+                label: item.komp,
+                backgroundColor: colorPalette[item.komp] || defaultColor,
+                data: []
+            };
+        }
+
+        datasetsObj[item.komp].data.push({
+            x: selisih,
+            y: item.vol,
+            r: Math.max(8, Math.sqrt(item.vol) / 15), // Rumus mengatur besar lingkaran
+            _area: item.area,
+            _avgCPA: avgCPA,
+            _avgKomp: avgKomp
+        });
+    });
+
+    const datasets = Object.values(datasetsObj);
+
+    // 4. Gambar Bubble Chart
+    chartInstances.bubble = new Chart(ctx, {
+        type: 'bubble',
+        data: { datasets: datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                x: { 
+                    title: { display: true, text: '← Shell Lebih Mahal (Rp) | Selisih Harga | (Rp) Shell Lebih Murah →', font: {weight: 'bold'} },
+                    grid: { color: (ctx) => ctx.tick.value === 0 ? '#1E293B' : '#E2E8F0', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } // Garis tebal di angka 0
+                },
+                y: { 
+                    title: { display: true, text: 'Total Volume (Liter)', font: {weight: 'bold'} },
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: { position: 'top' },
+                datalabels: { display: false }, // Matikan teks di dalam lingkaran agar rapi
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const d = context.raw;
+                            return [
+                                `Area: ${d._area} (Komp: ${context.dataset.label})`,
+                                `Volume: ${new Intl.NumberFormat('id-ID').format(d.y)} L`,
+                                `Avg Harga Shell: Rp ${new Intl.NumberFormat('id-ID').format(d._avgCPA)}`,
+                                `Avg Harga Komp: Rp ${new Intl.NumberFormat('id-ID').format(d._avgKomp)}`,
+                                `Selisih: Rp ${new Intl.NumberFormat('id-ID').format(d.x)}`
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 window.onscroll = function() {
