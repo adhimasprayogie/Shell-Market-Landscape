@@ -221,5 +221,41 @@
     </button>
 
     <script src="script.js"></script>
+
+    <div id="custom-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Detail Informasi Lapangan</h3>
+                <button class="close-modal-btn" onclick="closeCustomModal()" title="Tutup">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-item">
+                    <span class="modal-icon">🔴</span>
+                    <div class="modal-text">
+                        <strong>Isu Kompetitor / Pasar:</strong>
+                        <p id="modal-issue">-</p>
+                    </div>
+                </div>
+                <div class="modal-item">
+                    <span class="modal-icon">🟢</span>
+                    <div class="modal-text">
+                        <strong>Info Update / Strategi:</strong>
+                        <p id="modal-info">-</p>
+                    </div>
+                </div>
+                <div class="modal-item">
+                    <span class="modal-icon">⏱️</span>
+                    <div class="modal-text">
+                        <strong>Terms of Payment (TOP):</strong>
+                        <p id="modal-top">-</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="toggle-btn" style="padding: 10px 24px; box-shadow: none;" onclick="closeCustomModal()">Tutup</button>
+            </div>
+        </div>
+    </div>
+    
 </body>
 </html>
