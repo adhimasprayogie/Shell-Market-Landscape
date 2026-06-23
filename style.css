@@ -153,9 +153,33 @@ header {
 .refresh-btn:hover { background: var(--border-light); transform: rotate(180deg); }
 
 /* TABLES - Clean Design */
-.table-container { padding: 0; overflow-x: auto; } /* Hilangkan padding agar rapi */
+.table-container { 
+    padding: 0; 
+    overflow-x: auto; 
+    overflow-y: auto; /* Tambahan: agar bisa di-scroll vertikal */
+    max-height: 600px; /* Tambahan: membatasi tinggi kotak tabel */
+} 
 table { width: 100%; border-collapse: collapse; font-size: 13.5px; white-space: nowrap; }
-th { background-color: #F8FAFC; color: var(--text-muted); text-align: left; padding: 16px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-light); transition: background 0.2s;}
+
+th { 
+    background-color: #F8FAFC; 
+    color: var(--text-muted); 
+    text-align: left; 
+    padding: 16px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    font-size: 12px; 
+    letter-spacing: 0.5px; 
+    border-bottom: 2px solid var(--border-light); 
+    transition: background 0.2s;
+    
+    /* === TAMBAHAN STICKY HEADER DI BAWAH SINI === */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 4px -2px rgba(0,0,0,0.1); /* Opsional: memberi bayangan halus di bawah header saat di-scroll */
+}
 th:hover { background-color: var(--cpa-light-blue); color: var(--cpa-blue); }
 td { padding: 16px; border-bottom: 1px solid var(--border-light); vertical-align: middle; color: var(--text-main); }
 tr:hover { background-color: #F8FAFC; }
@@ -170,7 +194,22 @@ tr:last-child td { border-bottom: none; } /* Hilangkan border bawah paling akhir
 .gap-positive { color: #10B981; font-weight: bold; }
 .gap-negative { color: #EF4444; font-weight: bold; }
 
-.info-btn { background: var(--shell-yellow); color: #000; border: none; border-radius: 6px; padding: 8px 12px; font-size: 12px; cursor: pointer; font-weight: 700; transition: all 0.2s; }
+.info-btn { 
+    background: var(--shell-yellow); 
+    color: #000; 
+    border: none; 
+    border-radius: 6px; 
+    padding: 8px 12px; 
+    font-size: 12px; 
+    cursor: pointer; 
+    font-weight: 700; 
+    transition: all 0.2s; 
+    /* -- TAMBAHAN AGAR TOMBOL PRESISI DI TENGAH -- */
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 auto; 
+}
+
 .info-btn:hover { background: #E5C000; transform: translateY(-1px); }
 
 /* Toggles & Scenarios */
@@ -218,12 +257,97 @@ footer span { font-weight: 600; color: var(--cpa-dark); }
 
 /* MOBILE RESPONSIVE */
 @media screen and (max-width: 768px) {
-    header { flex-direction: column; align-items: flex-start; padding: 20px; gap: 15px; }
-    .sync-wrapper { align-self: flex-start; text-align: left;}
-    .kpi-grid, .alert-grid, .chart-section, .scenario-section { grid-template-columns: 1fr; }
-    .filter-group { flex-direction: column; width: 100%; }
-    .search-input { min-width: 100%; }
-    .map-wrapper { height: 450px; }
-    #backToTopBtn { bottom: 20px; right: 20px; padding: 10px; }
+    /* 1. Header & Logo (Dibuat Center & Rapi) */
+    header { flex-direction: column; align-items: center; padding: 15px; gap: 12px; text-align: center; }
+    .header-left, .header-right { width: 100%; justify-content: center; flex-wrap: wrap; }
+    .sync-wrapper { align-items: center; justify-content: center; width: 100%; }
+    .header-title h1 { font-size: 18px; }
+    .header-title p { font-size: 11px; }
+    .logo { height: 45px; }
+    .logo-cpa { height: 55px; }
+    .container { padding: 0 10px; }
+
+    /* 2. Menu Tabs (Bisa di-swipe ke kiri/kanan seperti App Native) */
+    .tab-menu { 
+        flex-wrap: nowrap; 
+        overflow-x: auto; 
+        -webkit-overflow-scrolling: touch; 
+        padding-bottom: 5px;
+        scrollbar-width: none; /* Sembunyikan scrollbar di Firefox */
+    }
+    .tab-menu::-webkit-scrollbar { display: none; } /* Sembunyikan scrollbar di Chrome/Safari */
+    .tab-btn { white-space: nowrap; font-size: 13px; padding: 10px 16px; }
+
+    /* 3. Grid & Cards (Paksa jadi 1 Kolom memanjang ke bawah) */
+    /* !important digunakan untuk menimpa style bawaan HTML */
+    .kpi-grid { grid-template-columns: 1fr !important; gap: 15px !important; margin-bottom: 15px !important; }
+    .alert-grid, .chart-section, .scenario-section { grid-template-columns: 1fr; gap: 15px; }
+    
+    /* Kecilkan padding card agar konten lebih lega di HP */
+    .kpi-card, .alert-card, .chart-box, .table-container, .map-wrapper { padding: 16px; }
+    .kpi-card .kpi-value { font-size: 26px; }
+
+    /* 4. Filter & Search Bar */
+    .control-bar { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .section-header-row { width: 100%; justify-content: space-between; }
+    .filter-group { flex-direction: column; width: 100%; gap: 10px; }
+    .search-input, .select-input { min-width: 100%; width: 100%; font-size: 13px; }
+
+    /* 5. Tabel (Bisa digeser ke samping dengan halus) */
+    .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; }
+    th, td { padding: 10px; font-size: 12px; }
+    
+    /* Kolom yang disembunyikan di HP agar tabel tidak terlalu sesak */
     .hide-mobile { display: none !important; }
+
+    /* 6. Chart & Peta (Disesuaikan tingginya agar tidak terpotong) */
+    .canvas-container { height: 230px !important; } /* Chart biasa */
+    .canvas-container[style*="height: 450px"] { height: 320px !important; } /* Khusus Pricing Matrix Bubble */
+    .map-wrapper { height: 350px; }
+
+    /* 7. Lain-lain */
+    #backToTopBtn { bottom: 15px; right: 15px; padding: 10px; }
+    footer { padding: 20px 10px; font-size: 12px; }
 }
+
+/* ==========================================
+   CUSTOM MODAL POP-UP INFO DETAIL
+   ========================================== */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.6); /* Latar gelap transparan */
+    backdrop-filter: blur(4px); /* Efek blur modern ala Apple */
+    z-index: 1000;
+    display: flex; justify-content: center; align-items: center;
+    opacity: 0; visibility: hidden; transition: all 0.3s ease;
+}
+.modal-overlay.show { opacity: 1; visibility: visible; }
+
+.modal-box {
+    background: var(--card-bg); width: 90%; max-width: 500px;
+    border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+    transform: translateY(20px) scale(0.95); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden; border: 1px solid var(--border-light);
+}
+.modal-overlay.show .modal-box { transform: translateY(0) scale(1); }
+
+.modal-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--border-light);
+    display: flex; justify-content: space-between; align-items: center;
+    background: #F8FAFC; border-top: 4px solid var(--shell-yellow);
+}
+.modal-header h3 { font-size: 16px; color: var(--cpa-dark); font-weight: 700; margin: 0; }
+.close-modal-btn { 
+    background: none; border: none; font-size: 26px; color: var(--text-muted); 
+    cursor: pointer; transition: color 0.2s; line-height: 1; padding: 0; margin-top: -4px;
+}
+.close-modal-btn:hover { color: var(--shell-red); }
+
+.modal-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+.modal-item { display: flex; gap: 15px; align-items: flex-start; }
+.modal-icon { font-size: 22px; line-height: 1.1; }
+.modal-text { flex-grow: 1; }
+.modal-text strong { display: block; font-size: 12.5px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+.modal-text p { font-size: 14px; color: var(--text-main); margin: 0; line-height: 1.5; white-space: pre-wrap; font-weight: 500;}
+
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border-light); text-align: right; background: #F8FAFC; }
