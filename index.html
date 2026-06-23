@@ -157,19 +157,58 @@
             </div>
         </div>
 
-        <div id="tab-tracker" class="tab-content">
+<div id="tab-tracker" class="tab-content">
             <div class="section-header-row">
-                <h2 class="section-title">📈 Pipeline & Churn Tracker (Q2 2026)</h2>
+                <h2 class="section-title">📈 Pipeline, Churn & Recovery Tracker</h2>
             </div>
-            <div class="table-container">
+            
+            <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 25px;">
+                <div class="kpi-card" style="border-top: 4px solid var(--cpa-blue);">
+                    <h4>Total Active Pipeline</h4>
+                    <div class="kpi-value" id="wl-total-pipeline">0 L</div>
+                    <div class="kpi-trend" id="wl-total-accounts">0 Akun Terdata</div>
+                </div>
+                <div class="kpi-card" style="border-top: 4px solid #10B981;">
+                    <h4>True Win Rate (%)</h4>
+                    <div class="kpi-value" id="wl-winrate" style="color: #10B981;">0%</div>
+                    <div class="kpi-trend" id="wl-secured-vol" style="color: #10B981;">0 L Secured</div>
+                </div>
+                <div class="kpi-card" style="border-top: 4px solid #EF4444;">
+                    <h4>Loss Rate (%)</h4>
+                    <div class="kpi-value" id="wl-lossrate" style="color: #EF4444;">0%</div>
+                    <div class="kpi-trend" id="wl-lost-vol" style="color: #EF4444;">0 L Churned</div>
+                </div>
+                <div class="kpi-card" style="border-top: 4px solid #F59E0B;">
+                    <h4>Remarketing (Revivable)</h4>
+                    <div class="kpi-value" id="wl-remarketing-vol" style="color: #F59E0B;">0 L</div>
+                    <div class="kpi-trend" id="wl-remarketing-count">0 Akun Target Recovery</div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-box">
+                    <h3>Komposisi Sales Funnel (Berdasarkan Volume)</h3>
+                    <div class="canvas-container">
+                        <canvas id="winLossPieChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <h3>Status Remarketing / Reviving Timeline</h3>
+                    <div class="canvas-container">
+                        <canvas id="remarketingBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 30px;">
                 <table id="winloss-table">
                     <thead>
                         <tr>
                             <th>Nama Customer</th>
-                            <th>Status</th>
-                            <th>Kompetitor</th>
+                            <th>Status Pipeline</th>
                             <th>Volume (L)</th>
-                            <th>Keterangan</th>
+                            <th>Status Remarketing</th>
+                            <th>Keterangan / Alasan</th>
                         </tr>
                     </thead>
                     <tbody id="winloss-body">
