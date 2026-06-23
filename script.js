@@ -13,6 +13,7 @@ let globalRawData = [];
 let isShowingAll = false;
 let currentSort = { column: 'volume', asc: false };
 let chartInstances = {};
+let wlChartInstances = { pie: null, bar: null };
 
 const parseNum = val => {
     if (!val || val === '-') return 0;
@@ -32,6 +33,10 @@ function formatVolume(num) {
 
 const alertSheet = 'Alerts';
 const alertUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(alertSheet)}`;
+
+// Pastikan tulisan 'WinLoss' sama persis dengan nama tab di Excel/Spreadsheet kamu (perhatikan spasi dan huruf besar/kecil)
+const winLossSheet = 'WinLoss'; 
+const winLossUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(winLossSheet)}`;
 
 function fetchAlerts() {
     const alertContainer = document.getElementById('alert-container');
@@ -77,10 +82,57 @@ function fetchAlerts() {
         });
 }
 
+// 2. FUNGSI FETCH KHUSUS WIN/LOSS
+function fetchWinLossData() {
+    // Kode Anti-Cache agar data selalu update
+    const noCacheUrl = winLossUrl + '&_=' + new Date().getTime();
+    
+    fetch(noCacheUrl)
+        .then(res => res.text())
+        .then(data => {
+            const json = JSON.parse(data.substring(47, data.length - 2));
+            const winLossArray = [];
+            
+            // Cerdas membaca header: Cek apakah header ada di label atau di baris pertama
+            let headers = json.table.cols.map(c => c && c.label ? c.label.trim() : "");
+            let startIndex = 0;
+            
+            if (headers.join("") === "") {
+                headers = json.table.rows[0].c.map(c => c ? c.v.trim() : "");
+                startIndex = 1; // Mulai baca data dari baris kedua karena baris pertama adalah header
+            }
+
+            // Ekstrak data per baris
+            for (let i = startIndex; i < json.table.rows.length; i++) {
+                const row = json.table.rows[i];
+                if (!row || !row.c || !row.c[0]) continue; // Lewati baris kosong
+
+                let rowObj = {};
+                row.c.forEach((cell, colIndex) => {
+                    let headerName = headers[colIndex];
+                    if (headerName) {
+                        // Ambil format asli dari Spreadsheet (misal: "1.045,00") atau teks biasa
+                        rowObj[headerName] = (cell && cell.f) ? cell.f : ((cell && cell.v !== null) ? cell.v : "");
+                    }
+                });
+                winLossArray.push(rowObj);
+            }
+
+            // Eksekusi fungsi render pembuat tabel yang sudah kamu buat sebelumnya!
+            renderWinLossData(winLossArray);
+        })
+        .catch(err => {
+            console.error("Gagal menarik data Win/Loss:", err);
+            const tbody = document.getElementById('winloss-body');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red; padding: 20px;">Gagal memuat data. Pastikan nama Sheet sudah benar.</td></tr>';
+        });
+}
+
 function fetchData() {
     document.getElementById('toggle-rows-btn').style.display = 'none';
     showSkeletonLoading();
     fetchAlerts();
+    fetchWinLossData();
     
     const statusBadge = document.getElementById('live-status');
     const headerRefreshBtn = document.querySelector('.header-refresh-btn');
@@ -309,6 +361,164 @@ function renderCharts(data) {
             }
         }
     });
+}
+
+function renderWinLossData(dataArray) {
+    const tbody = document.getElementById('winloss-body');
+    if (!tbody) return;
+    tbody.innerHTML = ''; 
+
+    // Wadah Kalkulasi Funnel
+    let statusCounts = { win: 0, loss: 0, pending: 0 };
+    let volumeStats = { win: 0, loss: 0, pending: 0 };
+    
+    // Wadah Kalkulasi Remarketing
+    let remarketingCount = 0;
+    let remarketingVolume = 0;
+    let remStatusBreakdown = {};
+
+    dataArray.forEach(row => {
+        // Mapping kolom otomatis dari Spreadsheet
+        let customerName = row['Nama Customer'] || '-';
+        let rawStatus = String(row['Status'] || 'Pending').toLowerCase().trim();
+        let kompetitorName = row['Kompetitor'] || '-';
+        let remText = String(row['Remarketing'] || 'No').trim();
+        let keterangan = row['Keterangan'] || '-';
+
+        // PEMBERSIH ANGKA INDONESIA (Contoh: "16.720,00" -> 16720)
+        let rawVolStr = String(row['Volume (L)'] || '0');
+        // Buang desimal (,00) lalu hapus titik (.)
+        let cleanVolStr = rawVolStr.split(',')[0].replace(/\./g, '');
+        let vol = Number(cleanVolStr.replace(/[^0-9]/g, '')) || 0;
+
+        // 1. Kategorisasi Status Funnel Cerdas
+        let badgeClass = "pipeline"; 
+        let keyStatus = "pending"; 
+        let displayStatus = "PENDING OPPORTUNITY";
+
+        if (rawStatus.includes('win')) {
+            badgeClass = "gap-positive"; keyStatus = "win"; displayStatus = "WON (SECURED)";
+        } else if (rawStatus.includes('loss')) {
+            badgeClass = "gap-negative"; keyStatus = "loss"; displayStatus = "LOST (CHURNED)";
+        }
+
+        // Akumulasi Volume & Akun ke Funnel Utama
+        statusCounts[keyStatus]++;
+        volumeStats[keyStatus] += vol;
+
+        // 2. Deteksi Korelasi Remarketing (Recovery Pipeline)
+        let remStyle = "color: #64748B; font-weight: 500;";
+        let uppercaseRem = remText.toUpperCase();
+
+        if (uppercaseRem !== 'NO' && uppercaseRem !== '-' && uppercaseRem !== '') {
+            // Jika statusnya bukan NO, berarti masuk program Remarketing
+            remarketingCount++;
+            remarketingVolume += vol;
+            remStatusBreakdown[remText] = (remStatusBreakdown[remText] || 0) + 1;
+            
+            // Tambahkan logo panah melingkar di status tabel
+            if (keyStatus !== 'win') displayStatus += " 🔄"; 
+
+            // Warna text dinamis berdasarkan progres Remarketing
+            if (uppercaseRem.includes('IN PROGRESS')) remStyle = "color: #3B82F6; font-weight: 700;"; // Biru
+            if (uppercaseRem.includes('SCHEDULED')) remStyle = "color: #F59E0B; font-weight: 700;"; // Kuning Emas
+            if (uppercaseRem.includes('WON-BACK')) remStyle = "color: #10B981; font-weight: 700; background-color: #E6F4EA; padding: 2px 6px; border-radius: 4px;"; // Hijau dengan background
+        }
+
+        // Render Baris Tabel
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="wrap-text"><strong style="color:var(--cpa-dark);">${customerName}</strong></td>
+            <td><span class="badge ${badgeClass}" style="font-size:11px;">${displayStatus}</span></td>
+            <td style="color:#DC2626; font-weight:600;">${kompetitorName}</td>
+            <td style="font-weight:700; color:var(--cpa-blue);">${new Intl.NumberFormat('id-ID').format(vol)}</td>
+            <td><span style="${remStyle}">${remText}</span></td>
+            <td class="wrap-text" style="color:var(--text-muted); font-size:12.5px;">${keterangan}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // --- 3. TEMBAK DATA KE KPI CARDS ---
+    let totalVolPipeline = volumeStats.win + volumeStats.loss + volumeStats.pending;
+    let totalAccCount = statusCounts.win + statusCounts.loss + statusCounts.pending;
+
+    let winRatePct = totalVolPipeline > 0 ? Math.round((volumeStats.win / totalVolPipeline) * 100) : 0;
+    let lossRatePct = totalVolPipeline > 0 ? Math.round((volumeStats.loss / totalVolPipeline) * 100) : 0;
+
+    if(document.getElementById('wl-total-pipeline')) document.getElementById('wl-total-pipeline').textContent = new Intl.NumberFormat('id-ID').format(totalVolPipeline) + ' L';
+    if(document.getElementById('wl-total-accounts')) document.getElementById('wl-total-accounts').textContent = `${totalAccCount} Akun Terdata`;
+    
+    if(document.getElementById('wl-winrate')) document.getElementById('wl-winrate').textContent = winRatePct + '%';
+    if(document.getElementById('wl-secured-vol')) document.getElementById('wl-secured-vol').textContent = new Intl.NumberFormat('id-ID').format(volumeStats.win) + ' L Secured';
+    
+    if(document.getElementById('wl-lossrate')) document.getElementById('wl-lossrate').textContent = lossRatePct + '%';
+    if(document.getElementById('wl-lost-vol')) document.getElementById('wl-lost-vol').textContent = new Intl.NumberFormat('id-ID').format(volumeStats.loss) + ' L Churned';
+    
+    if(document.getElementById('wl-remarketing-vol')) document.getElementById('wl-remarketing-vol').textContent = new Intl.NumberFormat('id-ID').format(remarketingVolume) + ' L';
+    if(document.getElementById('wl-remarketing-count')) document.getElementById('wl-remarketing-count').textContent = `${remarketingCount} Target Recovery`;
+
+    // --- 4. RENDER GRAFIK CHART.JS ---
+    if(wlChartInstances.pie) wlChartInstances.pie.destroy();
+    if(wlChartInstances.bar) wlChartInstances.bar.destroy();
+
+    if(typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
+
+    const pieCtx = document.getElementById('winLossPieChart');
+    if (pieCtx) {
+        wlChartInstances.pie = new Chart(pieCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Won (Secured)', 'Lost (Churned)', 'Pending Opportunity'],
+                datasets: [{
+                    data: [volumeStats.win, volumeStats.loss, volumeStats.pending],
+                    backgroundColor: ['#10B981', '#EF4444', '#F59E0B'],
+                    borderWidth: 2, borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '60%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                    datalabels: {
+                        color: '#FFFFFF', font: { weight: 'bold', size: 12 }, textShadowColor: '#000', textShadowBlur: 4,
+                        formatter: (value) => {
+                            if (value === 0) return '';
+                            return ((value / totalVolPipeline) * 100).toFixed(0) + '%';
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const barCtx = document.getElementById('remarketingBarChart');
+    if (barCtx) {
+        let barLabels = Object.keys(remStatusBreakdown);
+        let barData = Object.values(remStatusBreakdown);
+
+        if(barLabels.length === 0) { barLabels = ["Belum ada data"]; barData = [0]; }
+
+        wlChartInstances.bar = new Chart(barCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: barLabels,
+                datasets: [{
+                    label: 'Jumlah Akun',
+                    data: barData,
+                    backgroundColor: '#3B82F6', borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { anchor: 'end', align: 'right', color: '#1E3A8A', font: { weight: 'bold', size: 12 } }
+                },
+                scales: { x: { display: false }, y: { grid: { display: false } } }
+            }
+        });
+    }
 }
 
 window.onscroll = function() {
