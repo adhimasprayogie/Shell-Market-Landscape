@@ -96,6 +96,8 @@
                         <option value="">Semua Kompetitor</option>
                     </select>
                     <input type="text" id="search-box" class="search-input" placeholder="Cari akun, sales, produk..." onkeyup="filterTable()">
+
+                    <button class="export-btn" onclick="exportToCSV()" title="Download Data ke CSV">📥 Export</button>
                 </div>
             </div>
             
@@ -175,6 +177,10 @@
                         <canvas id="remarketingBarChart"></canvas>
                     </div>
                 </div>
+            </div>
+
+            <div class="control-bar" style="margin-top: 30px; margin-bottom: 10px; justify-content: flex-end;">
+                <button class="export-btn" onclick="exportWinLossToCSV()" title="Download Data Win/Loss ke CSV">📥 Export Win/Loss</button>
             </div>
 
             <div class="table-container" style="margin-top: 30px;">
