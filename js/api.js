@@ -3,18 +3,23 @@ import { showSkeletonLoading, parseNum } from './utils.js';
 import { updateKPIs, populateDropdowns, doSort } from './tab-main.js';
 import { renderWinLossData } from './tab-winloss.js';
 import { processAndRenderTrend } from './tab-pricing.js';
+import { renderOpsDashboard } from './tab-ops.js'; // <-- Import statis agar tidak diblokir browser
 
 const url = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.targetSheet)}`;
 const alertUrl = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.alertSheet)}`;
 const winLossUrl = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.winLossSheet)}`;
 const trendUrl = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.trendSheet)}`;
+const opsUrl = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.opsSheet)}`;
+const dsrUrl = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.dsrSheet)}`;
 
 export function fetchData() {
     document.getElementById('toggle-rows-btn').style.display = 'none';
     showSkeletonLoading();
+    
     fetchAlerts();
     fetchWinLossData();
     fetchTrendData();
+    fetchOpsData(); // Tarik data operasional
     
     const statusBadge = document.getElementById('live-status');
     const headerRefreshBtn = document.querySelector('.header-refresh-btn');
@@ -53,19 +58,14 @@ export function fetchData() {
         doSort('volume', false); 
     }).catch(err => {
         console.error('Error fetching Main Data:', err);
-        document.getElementById('table-body').innerHTML = '<tr><td colspan="10" style="text-align:center; color:#EF4444; padding:20px;">❌ Gagal sinkronisasi data.</td></tr>';
-        statusBadge.innerHTML = '● SYNC FAILED <span id="last-sync-time">Cek koneksi internet</span>';
-        statusBadge.style.backgroundColor = '#EF4444';
-        if (headerRefreshBtn) headerRefreshBtn.classList.remove('spinning');
     });
 }
 
 function fetchAlerts() {
-    const alertContainer = document.getElementById('alert-container');
     const noCacheAlertUrl = alertUrl + '&_=' + new Date().getTime();
     fetch(noCacheAlertUrl).then(res => res.text()).then(data => {
         const json = JSON.parse(data.substring(47, data.length - 2));
-        alertContainer.innerHTML = ''; 
+        document.getElementById('alert-container').innerHTML = ''; 
         json.table.rows.forEach((row, index) => {
             if(index === 0) return; 
             const cells = row.c;
@@ -74,7 +74,7 @@ function fetchAlerts() {
             const judul = cells[1]?.v || 'Isu Baru';
             const deskripsi = cells[2]?.v || 'Detail isu belum tersedia.';
             const isWarning = tipe.includes('🟡') ? 'warning' : '';
-            alertContainer.innerHTML += `<div class="alert-card ${isWarning}"><h3>${tipe} ${judul}</h3><p>${deskripsi}</p></div>`;
+            document.getElementById('alert-container').innerHTML += `<div class="alert-card ${isWarning}"><h3>${tipe} ${judul}</h3><p>${deskripsi}</p></div>`;
         });
     }).catch(err => console.error(err));
 }
@@ -82,23 +82,7 @@ function fetchAlerts() {
 function fetchWinLossData() {
     const noCacheUrl = winLossUrl + '&_=' + new Date().getTime();
     fetch(noCacheUrl).then(res => res.text()).then(data => {
-        const json = JSON.parse(data.substring(47, data.length - 2));
-        const winLossArray = [];
-        let headers = json.table.cols.map(c => c && c.label ? c.label.trim() : "");
-        let startIndex = 0;
-        if (headers.join("") === "") { headers = json.table.rows[0].c.map(c => c ? c.v.trim() : ""); startIndex = 1; }
-
-        for (let i = startIndex; i < json.table.rows.length; i++) {
-            const row = json.table.rows[i];
-            if (!row || !row.c || !row.c[0]) continue;
-            let rowObj = {};
-            row.c.forEach((cell, colIndex) => {
-                let headerName = headers[colIndex];
-                if (headerName) { rowObj[headerName] = (cell && cell.f) ? cell.f : ((cell && cell.v !== null) ? cell.v : ""); }
-            });
-            winLossArray.push(rowObj);
-        }
-        state.globalWinLossData = winLossArray; 
+        state.globalWinLossData = extractSheetData(data);
         renderWinLossData(state.globalWinLossData); 
     }).catch(err => console.error(err));
 }
@@ -106,21 +90,75 @@ function fetchWinLossData() {
 function fetchTrendData() {
     const noCacheUrl = trendUrl + '&_=' + new Date().getTime();
     fetch(noCacheUrl).then(res => res.text()).then(data => {
-        const json = JSON.parse(data.substring(47, data.length - 2));
-        let headers = json.table.cols.map(c => c && c.label ? c.label.trim() : "");
-        let startIndex = 0;
-        if (headers.join("") === "") { headers = json.table.rows[0].c.map(c => c ? c.v.trim() : ""); startIndex = 1; }
-        
-        state.trendHeaders = headers; 
-        state.globalTrendData = [];
-
-        for (let i = startIndex; i < json.table.rows.length; i++) {
-            const row = json.table.rows[i];
-            if (!row || !row.c || !row.c[0]) continue;
-            let rowObj = {};
-            for(let j = 0; j < headers.length; j++) { rowObj[headers[j]] = row.c[j] ? row.c[j].v : null; }
-            state.globalTrendData.push(rowObj);
-        }
+        state.globalTrendData = extractSheetData(data);
+        state.trendHeaders = Object.keys(state.globalTrendData[0] || {});
         processAndRenderTrend(); 
     }).catch(err => console.error(err));
+}
+
+export function fetchOpsData() {
+    fetch(opsUrl + '&_=' + new Date().getTime()).then(res => res.text()).then(data => {
+        if(data.includes('"status":"error"')) throw new Error("Tab OperationalTracker tidak ditemukan");
+        state.globalOpsData = extractSheetData(data);
+        fetchDsrData(); 
+    }).catch(err => {
+        console.error(err);
+        state.globalOpsData = []; 
+        fetchDsrData(); // Tetap jalan meskipun Ops error agar DSR bisa jalan
+    });
+}
+
+function fetchDsrData() {
+    fetch(dsrUrl + '&_=' + new Date().getTime()).then(res => res.text()).then(data => {
+        if(data.includes('"status":"error"')) throw new Error("Tab TargetDSR tidak ditemukan");
+        state.globalDsrData = extractSheetData(data);
+        
+        // Eksekusi render setelah KEDUA data sukses
+        const segmenF = document.getElementById('filter-segmen') ? document.getElementById('filter-segmen').value.toLowerCase().trim() : '';
+        renderOpsDashboard(segmenF);
+    }).catch(err => {
+        console.error(err);
+        state.globalDsrData = [];
+        const segmenF = document.getElementById('filter-segmen') ? document.getElementById('filter-segmen').value.toLowerCase().trim() : '';
+        renderOpsDashboard(segmenF);
+    });
+}
+
+// ==========================================
+// FUNGSI EKSTRAK JSON SUPER KEBAl BANTING
+// ==========================================
+function extractSheetData(data) {
+    try {
+        const json = JSON.parse(data.substring(47, data.length - 2));
+        let headers = json.table.cols.map(c => c && c.label ? String(c.label).trim() : "");
+        let startIndex = 0;
+        
+        // Terkadang Google API melempar header ke dalam row[0], bukan label. Kode ini mengeceknya.
+        if (headers.join("").trim() === "" || headers.every(h => h.length <= 2)) { 
+            headers = json.table.rows[0].c.map(c => (c && c.v !== null) ? String(c.f !== undefined ? c.f : c.v).trim() : ""); 
+            startIndex = 1; 
+        }
+        
+        let arr = [];
+        for (let i = startIndex; i < json.table.rows.length; i++) {
+            const row = json.table.rows[i];
+            if (!row || !row.c) continue;
+            
+            let isEmptyRow = true;
+            let obj = {};
+            for(let j = 0; j < headers.length; j++) { 
+                if (headers[j]) {
+                    let cell = row.c[j];
+                    let val = cell ? (cell.f !== undefined ? cell.f : cell.v) : null;
+                    obj[headers[j]] = val;
+                    if (val !== null && String(val).trim() !== "") isEmptyRow = false;
+                }
+            }
+            if (!isEmptyRow) arr.push(obj);
+        }
+        return arr;
+    } catch (e) {
+        console.error("Gagal parsing JSON Spreadsheet:", e);
+        return [];
+    }
 }
