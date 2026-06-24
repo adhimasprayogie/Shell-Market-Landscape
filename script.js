@@ -1,21 +1,41 @@
-function switchTab(tabId, buttonElement) {
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    buttonElement.classList.add('active');
-}
+/* ==========================================================================
+   MARKET LANDSCAPE DASHBOARD - PT CPA
+   Main JavaScript File
+   ========================================================================== */
 
+/* --------------------------------------------------------------------------
+   1. GLOBAL VARIABLES & CONFIGURATION
+   -------------------------------------------------------------------------- */
 const spreadsheetId = '1F9UeVxShXE7yNyWiyrJuKAHhZCR-WnCXSXPItte32Io';
+
 const targetSheet = 'Data Input'; 
 const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(targetSheet)}`;
 
+const alertSheet = 'Alerts';
+const alertUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(alertSheet)}`;
+
+const winLossSheet = 'WinLoss'; 
+const winLossUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(winLossSheet)}`;
+
+const trendSheet = 'TrendHarga'; 
+const trendUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(trendSheet)}`;
+
+// State Management
 let globalRawData = [];
 let globalWinLossData = [];
+let globalTrendData = []; // Menyimpan data mentah Trend Harga
+let trendHeaders = [];    // Menyimpan header kolom Trend Harga
+
 let isShowingAll = false;
 let currentSort = { column: 'volume', asc: false };
+
 let chartInstances = {};
 let wlChartInstances = { pie: null, bar: null };
 
+
+/* --------------------------------------------------------------------------
+   2. UTILITY FUNCTIONS (Helper)
+   -------------------------------------------------------------------------- */
 const parseNum = val => {
     if (!val || val === '-') return 0;
     let num = parseFloat(val.toString().replace(/[^0-9.-]+/g,""));
@@ -32,114 +52,17 @@ function formatVolume(num) {
     return new Intl.NumberFormat('id-ID').format(num);
 }
 
-const alertSheet = 'Alerts';
-const alertUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(alertSheet)}`;
 
-// Pastikan tulisan 'WinLoss' sama persis dengan nama tab di Excel/Spreadsheet kamu (perhatikan spasi dan huruf besar/kecil)
-const winLossSheet = 'WinLoss'; 
-const winLossUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(winLossSheet)}`;
-
-function fetchAlerts() {
-    const alertContainer = document.getElementById('alert-container');
-    alertContainer.innerHTML = `
-        <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
-        <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
-        <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
-    `;
-
-    // KODE ANTI-CACHE 
-    const noCacheAlertUrl = alertUrl + '&_=' + new Date().getTime();
-
-    fetch(noCacheAlertUrl) // Gunakan URL baru yang ada time-stamp nya
-        .then(res => res.text())
-
-    fetch(alertUrl)
-        .then(res => res.text())
-        .then(data => {
-            const json = JSON.parse(data.substring(47, data.length - 2));
-            alertContainer.innerHTML = ''; 
-            
-            json.table.rows.forEach((row, index) => {
-                if(index === 0) return; 
-                const cells = row.c;
-                if (!cells || !cells[0]) return;
-
-                const tipe = cells[0]?.v || '🟡';
-                const judul = cells[1]?.v || 'Isu Baru';
-                const deskripsi = cells[2]?.v || 'Detail isu belum tersedia.';
-                const isWarning = tipe.includes('🟡') ? 'warning' : '';
-
-                alertContainer.innerHTML += `
-                    <div class="alert-card ${isWarning}">
-                        <h3>${tipe} ${judul}</h3>
-                        <p>${deskripsi}</p>
-                    </div>
-                `;
-            });
-        })
-        .catch(err => {
-            console.error('Error fetching alerts:', err);
-            alertContainer.innerHTML = '<div style="grid-column: 1/-1; color: var(--shell-red); font-weight: bold;">❌ Gagal memuat Executive Summary.</div>';
-        });
-}
-
-// 2. FUNGSI FETCH KHUSUS WIN/LOSS
-function fetchWinLossData() {
-    // Kode Anti-Cache agar data selalu update
-    const noCacheUrl = winLossUrl + '&_=' + new Date().getTime();
-    
-    fetch(noCacheUrl)
-        .then(res => res.text())
-        .then(data => {
-            const json = JSON.parse(data.substring(47, data.length - 2));
-            const winLossArray = [];
-            
-            // Cerdas membaca header: Cek apakah header ada di label atau di baris pertama
-            let headers = json.table.cols.map(c => c && c.label ? c.label.trim() : "");
-            let startIndex = 0;
-            
-            if (headers.join("") === "") {
-                headers = json.table.rows[0].c.map(c => c ? c.v.trim() : "");
-                startIndex = 1; // Mulai baca data dari baris kedua karena baris pertama adalah header
-            }
-
-            // Ekstrak data per baris
-            for (let i = startIndex; i < json.table.rows.length; i++) {
-                const row = json.table.rows[i];
-                if (!row || !row.c || !row.c[0]) continue; // Lewati baris kosong
-
-                let rowObj = {};
-                row.c.forEach((cell, colIndex) => {
-                    let headerName = headers[colIndex];
-                    if (headerName) {
-                        rowObj[headerName] = (cell && cell.f) ? cell.f : ((cell && cell.v !== null) ? cell.v : "");
-                    }
-                });
-                winLossArray.push(rowObj);
-            }
-
-            // ==========================================
-            // KODE YANG SEBELUMNYA HILANG ADA DI BAWAH INI
-            // ==========================================
-            globalWinLossData = winLossArray; // Simpan data ke variabel Global!
-            renderWinLossData(globalWinLossData); // Render tabel Win/Loss
-            
-        })
-        .catch(err => {
-            console.error("Gagal menarik data Win/Loss:", err);
-            const tbody = document.getElementById('winloss-body');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red; padding: 20px;">Gagal memuat data. Pastikan nama Sheet sudah benar.</td></tr>';
-        });
-}
-
+/* --------------------------------------------------------------------------
+   3. DATA FETCHING (Google Sheets API)
+   -------------------------------------------------------------------------- */
 function fetchData() {
-    const headerBtn = document.querySelector('.header-refresh-btn');
-    const controlBtn = document.querySelector('.refresh-btn');
-    
     document.getElementById('toggle-rows-btn').style.display = 'none';
     showSkeletonLoading();
+    
     fetchAlerts();
     fetchWinLossData();
+    fetchTrendData();
     
     const statusBadge = document.getElementById('live-status');
     const headerRefreshBtn = document.querySelector('.header-refresh-btn');
@@ -147,17 +70,10 @@ function fetchData() {
     statusBadge.innerHTML = '● SYNCING... <span id="last-sync-time">Menarik data...</span>';
     statusBadge.style.backgroundColor = '#F59E0B';
     
-    if (headerRefreshBtn) {
-        headerRefreshBtn.classList.add('spinning');
-    }
+    if (headerRefreshBtn) headerRefreshBtn.classList.add('spinning');
 
-    // KODE ANTI-CACHE
     const noCacheUrl = url + '&_=' + new Date().getTime();
-
-    fetch(noCacheUrl) // Gunakan URL baru
-        .then(res => res.text())
-
-    fetch(url)
+    fetch(noCacheUrl)
         .then(res => res.text())
         .then(data => {
             const json = JSON.parse(data.substring(47, data.length - 2));
@@ -183,28 +99,110 @@ function fetchData() {
 
             statusBadge.innerHTML = `● LIVE & SYNCED <span id="last-sync-time">Update: ${timeString}</span>`;
             statusBadge.style.backgroundColor = '#10B981';
-
-            if (headerRefreshBtn) {
-                headerRefreshBtn.classList.remove('spinning');
-            }
+            if (headerRefreshBtn) headerRefreshBtn.classList.remove('spinning');
 
             populateDropdowns();
             updateKPIs(); 
             doSort('volume', false); 
         })
         .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('table-body').innerHTML = '<tr><td colspan="10" style="text-align:center; color:#EF4444; padding:20px;">❌ Gagal sinkronisasi data. Cek koneksi atau nama Sheet.</td></tr>';
-            
+            console.error('Error fetching Main Data:', error);
+            document.getElementById('table-body').innerHTML = '<tr><td colspan="10" style="text-align:center; color:#EF4444; padding:20px;">❌ Gagal sinkronisasi data. Cek koneksi internet.</td></tr>';
             statusBadge.innerHTML = '● SYNC FAILED <span id="last-sync-time">Cek koneksi internet</span>';
             statusBadge.style.backgroundColor = '#EF4444';
-
-            if (headerRefreshBtn) {
-                headerRefreshBtn.classList.remove('spinning');
-            }
+            if (headerRefreshBtn) headerRefreshBtn.classList.remove('spinning');
         });
 }
 
+function fetchAlerts() {
+    const alertContainer = document.getElementById('alert-container');
+    alertContainer.innerHTML = `
+        <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
+        <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
+        <div class="skeleton skeleton-kpi" style="width: 100%; height: 120px;"></div>
+    `;
+
+    const noCacheAlertUrl = alertUrl + '&_=' + new Date().getTime();
+    fetch(noCacheAlertUrl)
+        .then(res => res.text())
+        .then(data => {
+            const json = JSON.parse(data.substring(47, data.length - 2));
+            alertContainer.innerHTML = ''; 
+            json.table.rows.forEach((row, index) => {
+                if(index === 0) return; 
+                const cells = row.c;
+                if (!cells || !cells[0]) return;
+                const tipe = cells[0]?.v || '🟡';
+                const judul = cells[1]?.v || 'Isu Baru';
+                const deskripsi = cells[2]?.v || 'Detail isu belum tersedia.';
+                const isWarning = tipe.includes('🟡') ? 'warning' : '';
+                alertContainer.innerHTML += `<div class="alert-card ${isWarning}"><h3>${tipe} ${judul}</h3><p>${deskripsi}</p></div>`;
+            });
+        }).catch(err => console.error(err));
+}
+
+function fetchWinLossData() {
+    const noCacheUrl = winLossUrl + '&_=' + new Date().getTime();
+    fetch(noCacheUrl)
+        .then(res => res.text())
+        .then(data => {
+            const json = JSON.parse(data.substring(47, data.length - 2));
+            const winLossArray = [];
+            
+            let headers = json.table.cols.map(c => c && c.label ? c.label.trim() : "");
+            let startIndex = 0;
+            if (headers.join("") === "") {
+                headers = json.table.rows[0].c.map(c => c ? c.v.trim() : "");
+                startIndex = 1; 
+            }
+
+            for (let i = startIndex; i < json.table.rows.length; i++) {
+                const row = json.table.rows[i];
+                if (!row || !row.c || !row.c[0]) continue;
+                let rowObj = {};
+                row.c.forEach((cell, colIndex) => {
+                    let headerName = headers[colIndex];
+                    if (headerName) { rowObj[headerName] = (cell && cell.f) ? cell.f : ((cell && cell.v !== null) ? cell.v : ""); }
+                });
+                winLossArray.push(rowObj);
+            }
+            globalWinLossData = winLossArray; 
+            renderWinLossData(globalWinLossData); 
+        }).catch(err => console.error(err));
+}
+
+function fetchTrendData() {
+    const noCacheUrl = trendUrl + '&_=' + new Date().getTime();
+    fetch(noCacheUrl)
+        .then(res => res.text())
+        .then(data => {
+            const json = JSON.parse(data.substring(47, data.length - 2));
+            let headers = json.table.cols.map(c => c && c.label ? c.label.trim() : "");
+            let startIndex = 0;
+            if (headers.join("") === "") {
+                headers = json.table.rows[0].c.map(c => c ? c.v.trim() : "");
+                startIndex = 1; 
+            }
+            trendHeaders = headers; 
+            globalTrendData = [];
+
+            for (let i = startIndex; i < json.table.rows.length; i++) {
+                const row = json.table.rows[i];
+                if (!row || !row.c || !row.c[0]) continue;
+                let rowObj = {};
+                for(let j = 0; j < headers.length; j++) {
+                    rowObj[headers[j]] = row.c[j] ? row.c[j].v : null;
+                }
+                globalTrendData.push(rowObj);
+            }
+            processAndRenderTrend(); // Render awal
+        }).catch(err => console.error(err));
+}
+
+
+/* --------------------------------------------------------------------------
+   4. RENDER UI & CHARTS
+   -------------------------------------------------------------------------- */
 function updateKPIs(dataArray = globalRawData) {
     let totalVol = 0;
     let kompCount = {};
@@ -214,11 +212,9 @@ function updateKPIs(dataArray = globalRawData) {
         totalVol += d.volume;
         let k = d.kompetitor.trim();
         if(k && k !== '-') { kompCount[k] = (kompCount[k] || 0) + 1; }
-
-        if (d.customer && d.customer !== '-') {
-            uniqueCustomers.add(d.customer.trim().toUpperCase());
-        }
+        if (d.customer && d.customer !== '-') { uniqueCustomers.add(d.customer.trim().toUpperCase()); }
     });
+    
     document.getElementById('kpi-volume').innerText = formatVolume(totalVol) + " L";
     document.getElementById('kpi-accounts').innerText = uniqueCustomers.size;
 
@@ -246,14 +242,20 @@ function renderTable(filteredData = null) {
     tableBody.innerHTML = '';
     const dataToRender = filteredData || globalRawData;
 
-    // --- TAMBAHAN UNTUK FITUR EXPORT ---
-    window.currentExportData = dataToRender;
+    window.currentExportData = dataToRender; // Simpan untuk Export CSV
     
     const btn = document.getElementById('toggle-rows-btn');
-    if (!filteredData && dataToRender.length > 5) { btn.style.display = 'block'; } 
-    else { btn.style.display = 'none'; }
+    
+    // --- PERBAIKAN 1: Logika Limit 5 Baris yang Sempurna ---
+    if (dataToRender.length > 5) { 
+        btn.style.display = 'block'; 
+        btn.innerHTML = isShowingAll ? 'Show Less' : 'Show All Data';
+    } else { 
+        btn.style.display = 'none'; 
+    }
 
-    const limit = (isShowingAll || filteredData !== null) ? dataToRender.length : Math.min(5, dataToRender.length);
+    const limit = isShowingAll ? dataToRender.length : Math.min(5, dataToRender.length);
+    // --------------------------------------------------------
 
     for (let i = 0; i < limit; i++) {
         const item = dataToRender[i];
@@ -288,88 +290,6 @@ function renderTable(filteredData = null) {
         tableBody.appendChild(tr);
     }
     renderCharts(dataToRender);
-}
-
-function sortTable(column) {
-    if (currentSort.column === column) { currentSort.asc = !currentSort.asc; } 
-    else { currentSort.column = column; currentSort.asc = true; }
-    doSort(column, currentSort.asc);
-}
-
-function doSort(col, isAsc) {
-    globalRawData.sort((a, b) => {
-        let valA = a[col]; let valB = b[col];
-        if (typeof valA === 'string') valA = valA.toLowerCase();
-        if (typeof valB === 'string') valB = valB.toLowerCase();
-        if (valA < valB) return isAsc ? -1 : 1;
-        if (valA > valB) return isAsc ? 1 : -1;
-        return 0;
-    });
-    filterTable();
-}
-
-function toggleRowsDisplay() {
-    isShowingAll = !isShowingAll;
-    const btn = document.getElementById('toggle-rows-btn');
-    btn.innerHTML = isShowingAll ? 'Show Less' : 'Show All Data';
-    renderTable();
-}
-
-function filterTable() {
-    const query = document.getElementById('search-box').value.toLowerCase().trim();
-    const provF = document.getElementById('filter-prov').value.toLowerCase().trim();
-    const kompF = document.getElementById('filter-komp').value.toLowerCase().trim();
-
-    // JIKA TIDAK ADA FILTER (Tampilkan Semua)
-    if (query === '' && provF === '' && kompF === '') {
-        renderTable();
-        updateKPIs(); 
-        if (globalWinLossData.length > 0) renderWinLossData(globalWinLossData);
-        return;
-    }
-
-    // 1. FILTER DATA TABEL UTAMA (Data Input)
-    const filteredMain = globalRawData.filter(item => {
-        const safeStr = (str) => str ? str.toString().toLowerCase().trim() : '';
-        
-        const matchQ = query === "" || 
-                       safeStr(item.salesman).includes(query) || 
-                       safeStr(item.provinsi).includes(query) ||
-                       safeStr(item.customer).includes(query) || 
-                       safeStr(item.sektor).includes(query) ||
-                       safeStr(item.kompetitor).includes(query) || 
-                       safeStr(item.skuShell).includes(query);
-                       
-        const matchP = provF === "" || safeStr(item.provinsi) === provF;
-        const matchK = kompF === "" || safeStr(item.kompetitor) === kompF;
-        
-        return matchQ && matchP && matchK;
-    });
-    
-    // Render Ulang Tabel Utama & Pricing Matrix Chart
-    renderTable(filteredMain);
-    updateKPIs(filteredMain); 
-
-    // 2. FILTER DATA WIN/LOSS
-    if (globalWinLossData.length > 0) {
-        const filteredWL = globalWinLossData.filter(item => {
-            const safeStr = (str) => str ? str.toString().toLowerCase().trim() : '';
-            
-            // Cek pencarian teks di Nama Customer atau Keterangan
-            const matchQ = query === "" || 
-                           safeStr(item['Nama Customer']).includes(query) || 
-                           safeStr(item['Keterangan']).includes(query);
-            
-            // Cek kesamaan Provinsi dan Kompetitor (Menggunakan exact match yang sudah di-trim)
-            const matchP = provF === "" || safeStr(item['Provinsi']) === provF;
-            const matchK = kompF === "" || safeStr(item['Kompetitor']) === kompF;
-            
-            return matchQ && matchP && matchK;
-        });
-        
-        // Render Ulang KPI, Chart, dan Tabel Win/Loss sesuai filter
-        renderWinLossData(filteredWL);
-    }
 }
 
 function renderCharts(data) {
@@ -422,72 +342,49 @@ function renderCharts(data) {
 }
 
 function renderWinLossData(dataArray) {
-
-    // --- TAMBAHAN UNTUK MENANGKAP DATA EXPORT ---
-    window.currentWLExportData = dataArray;
+    window.currentWLExportData = dataArray; 
 
     const tbody = document.getElementById('winloss-body');
     if (!tbody) return;
     tbody.innerHTML = ''; 
 
-    // Wadah Kalkulasi Funnel
     let statusCounts = { win: 0, loss: 0, pending: 0 };
     let volumeStats = { win: 0, loss: 0, pending: 0 };
-    
-    // Wadah Kalkulasi Remarketing
     let remarketingCount = 0;
     let remarketingVolume = 0;
     let remStatusBreakdown = {};
 
     dataArray.forEach(row => {
-        // Mapping kolom otomatis dari Spreadsheet
         let customerName = row['Nama Customer'] || '-';
         let rawStatus = String(row['Status'] || 'Pending').toLowerCase().trim();
         let kompetitorName = row['Kompetitor'] || '-';
         let remText = String(row['Remarketing'] || 'No').trim();
         let keterangan = row['Keterangan'] || '-';
 
-        // PEMBERSIH ANGKA INDONESIA (Contoh: "16.720,00" -> 16720)
         let rawVolStr = String(row['Volume (L)'] || '0');
-        // Buang desimal (,00) lalu hapus titik (.)
         let cleanVolStr = rawVolStr.split(',')[0].replace(/\./g, '');
         let vol = Number(cleanVolStr.replace(/[^0-9]/g, '')) || 0;
 
-        // 1. Kategorisasi Status Funnel Cerdas
-        let badgeClass = "pipeline"; 
-        let keyStatus = "pending"; 
-        let displayStatus = "PENDING OPPORTUNITY";
+        let badgeClass = "pipeline"; let keyStatus = "pending"; let displayStatus = "PENDING OPPORTUNITY";
+        if (rawStatus.includes('win')) { badgeClass = "gap-positive"; keyStatus = "win"; displayStatus = "WON (SECURED)"; } 
+        else if (rawStatus.includes('loss')) { badgeClass = "gap-negative"; keyStatus = "loss"; displayStatus = "LOST (CHURNED)"; }
 
-        if (rawStatus.includes('win')) {
-            badgeClass = "gap-positive"; keyStatus = "win"; displayStatus = "WON (SECURED)";
-        } else if (rawStatus.includes('loss')) {
-            badgeClass = "gap-negative"; keyStatus = "loss"; displayStatus = "LOST (CHURNED)";
-        }
-
-        // Akumulasi Volume & Akun ke Funnel Utama
         statusCounts[keyStatus]++;
         volumeStats[keyStatus] += vol;
 
-        // 2. Deteksi Korelasi Remarketing (Recovery Pipeline)
         let remStyle = "color: #64748B; font-weight: 500;";
         let uppercaseRem = remText.toUpperCase();
 
         if (uppercaseRem !== 'NO' && uppercaseRem !== '-' && uppercaseRem !== '') {
-            // Jika statusnya bukan NO, berarti masuk program Remarketing
-            remarketingCount++;
-            remarketingVolume += vol;
+            remarketingCount++; remarketingVolume += vol;
             remStatusBreakdown[remText] = (remStatusBreakdown[remText] || 0) + 1;
             
-            // Tambahkan logo panah melingkar di status tabel
             if (keyStatus !== 'win') displayStatus += " 🔄"; 
-
-            // Warna text dinamis berdasarkan progres Remarketing
-            if (uppercaseRem.includes('IN PROGRESS')) remStyle = "color: #3B82F6; font-weight: 700;"; // Biru
-            if (uppercaseRem.includes('SCHEDULED')) remStyle = "color: #F59E0B; font-weight: 700;"; // Kuning Emas
-            if (uppercaseRem.includes('WON-BACK')) remStyle = "color: #10B981; font-weight: 700; background-color: #E6F4EA; padding: 2px 6px; border-radius: 4px;"; // Hijau dengan background
+            if (uppercaseRem.includes('IN PROGRESS')) remStyle = "color: #3B82F6; font-weight: 700;"; 
+            if (uppercaseRem.includes('SCHEDULED')) remStyle = "color: #F59E0B; font-weight: 700;"; 
+            if (uppercaseRem.includes('WON-BACK')) remStyle = "color: #10B981; font-weight: 700; background-color: #E6F4EA; padding: 2px 6px; border-radius: 4px;"; 
         }
 
-        // Render Baris Tabel
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="wrap-text"><strong style="color:var(--cpa-dark);">${customerName}</strong></td>
@@ -500,30 +397,22 @@ function renderWinLossData(dataArray) {
         tbody.appendChild(tr);
     });
 
-    // --- 3. TEMBAK DATA KE KPI CARDS ---
     let totalVolPipeline = volumeStats.win + volumeStats.loss + volumeStats.pending;
     let totalAccCount = statusCounts.win + statusCounts.loss + statusCounts.pending;
-
     let winRatePct = totalVolPipeline > 0 ? Math.round((volumeStats.win / totalVolPipeline) * 100) : 0;
     let lossRatePct = totalVolPipeline > 0 ? Math.round((volumeStats.loss / totalVolPipeline) * 100) : 0;
 
     if(document.getElementById('wl-total-pipeline')) document.getElementById('wl-total-pipeline').textContent = new Intl.NumberFormat('id-ID').format(totalVolPipeline) + ' L';
     if(document.getElementById('wl-total-accounts')) document.getElementById('wl-total-accounts').textContent = `${totalAccCount} Akun Terdata`;
-    
     if(document.getElementById('wl-winrate')) document.getElementById('wl-winrate').textContent = winRatePct + '%';
     if(document.getElementById('wl-secured-vol')) document.getElementById('wl-secured-vol').textContent = new Intl.NumberFormat('id-ID').format(volumeStats.win) + ' L Secured';
-    
     if(document.getElementById('wl-lossrate')) document.getElementById('wl-lossrate').textContent = lossRatePct + '%';
     if(document.getElementById('wl-lost-vol')) document.getElementById('wl-lost-vol').textContent = new Intl.NumberFormat('id-ID').format(volumeStats.loss) + ' L Churned';
-    
     if(document.getElementById('wl-remarketing-vol')) document.getElementById('wl-remarketing-vol').textContent = new Intl.NumberFormat('id-ID').format(remarketingVolume) + ' L';
     if(document.getElementById('wl-remarketing-count')) document.getElementById('wl-remarketing-count').textContent = `${remarketingCount} Target Recovery`;
 
-    // --- 4. RENDER GRAFIK CHART.JS ---
     if(wlChartInstances.pie) wlChartInstances.pie.destroy();
     if(wlChartInstances.bar) wlChartInstances.bar.destroy();
-
-    if(typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
 
     const pieCtx = document.getElementById('winLossPieChart');
     if (pieCtx) {
@@ -557,192 +446,228 @@ function renderWinLossData(dataArray) {
     if (barCtx) {
         let barLabels = Object.keys(remStatusBreakdown);
         let barData = Object.values(remStatusBreakdown);
-
         if(barLabels.length === 0) { barLabels = ["Belum ada data"]; barData = [0]; }
 
         wlChartInstances.bar = new Chart(barCtx.getContext('2d'), {
             type: 'bar',
-            data: {
-                labels: barLabels,
-                datasets: [{
-                    label: 'Jumlah Akun',
-                    data: barData,
-                    backgroundColor: '#3B82F6', borderRadius: 4
-                }]
-            },
+            data: { labels: barLabels, datasets: [{ label: 'Jumlah Akun', data: barData, backgroundColor: '#3B82F6', borderRadius: 4 }] },
             options: {
-                indexAxis: 'y',
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    datalabels: { anchor: 'end', align: 'right', color: '#1E3A8A', font: { weight: 'bold', size: 12 } }
-                },
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'right', color: '#1E3A8A', font: { weight: 'bold', size: 12 } } },
                 scales: { x: { display: false }, y: { grid: { display: false } } }
             }
         });
     }
 }
 
-// Fungsi khusus merender Pricing Matrix Bubble Chart
 function renderPricingMatrix(data) {
     const canvas = document.getElementById('pricingBubbleChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-
-    // Hancurkan chart lama jika ada agar tidak tumpang tindih
     if(chartInstances.bubble) chartInstances.bubble.destroy();
 
-    // 1. Agregasi Data (Gabungkan berdasarkan Area dan Kompetitor)
     const summary = data.reduce((acc, d) => {
-        // Ambil data yang punya harga & kompetitor saja
         if (d.hargaCPA > 0 && d.hargaKomp > 0 && d.kompetitor && d.kompetitor !== '-') {
             let key = `${d.provinsi}_${d.kompetitor}`;
-            if (!acc[key]) {
-                acc[key] = { area: d.provinsi, komp: d.kompetitor, vol: 0, sumCPA: 0, sumKomp: 0, count: 0 };
-            }
-            acc[key].vol += d.volume;
-            acc[key].sumCPA += d.hargaCPA;
-            acc[key].sumKomp += d.hargaKomp;
-            acc[key].count++;
+            if (!acc[key]) { acc[key] = { area: d.provinsi, komp: d.kompetitor, vol: 0, sumCPA: 0, sumKomp: 0, count: 0 }; }
+            acc[key].vol += d.volume; acc[key].sumCPA += d.hargaCPA; acc[key].sumKomp += d.hargaKomp; acc[key].count++;
         }
         return acc;
     }, {});
 
-    // 2. Palet Warna Khusus Kompetitor
-    const colorPalette = {
-        'Pertamina': 'rgba(239, 68, 68, 0.7)', // Merah
-        'Castrol': 'rgba(16, 185, 129, 0.7)',  // Hijau
-        'Sefas': 'rgba(245, 158, 11, 0.7)',    // Kuning
-        'Idemitsu': 'rgba(59, 130, 246, 0.7)'  // Biru
-    };
-    const defaultColor = 'rgba(100, 116, 139, 0.7)'; // Abu-abu
+    const colorPalette = { 'Pertamina': 'rgba(239, 68, 68, 0.7)', 'Castrol': 'rgba(16, 185, 129, 0.7)', 'Sefas': 'rgba(245, 158, 11, 0.7)', 'Idemitsu': 'rgba(59, 130, 246, 0.7)' };
+    const defaultColor = 'rgba(100, 116, 139, 0.7)'; 
 
-    // 3. Susun data untuk Chart.js
     let datasetsObj = {};
     Object.values(summary).forEach(item => {
         let avgCPA = item.sumCPA / item.count;
         let avgKomp = item.sumKomp / item.count;
-        let selisih = avgKomp - avgCPA; // Jika Positif, kita lebih murah
+        let selisih = avgKomp - avgCPA; 
 
-        if (!datasetsObj[item.komp]) {
-            datasetsObj[item.komp] = {
-                label: item.komp,
-                backgroundColor: colorPalette[item.komp] || defaultColor,
-                data: []
-            };
-        }
-
+        if (!datasetsObj[item.komp]) { datasetsObj[item.komp] = { label: item.komp, backgroundColor: colorPalette[item.komp] || defaultColor, data: [] }; }
         datasetsObj[item.komp].data.push({
-            x: selisih,
-            y: item.vol,
-            r: Math.max(8, Math.sqrt(item.vol) / 15), // Rumus mengatur besar lingkaran
-            _area: item.area,
-            _avgCPA: avgCPA,
-            _avgKomp: avgKomp
+            x: selisih, y: item.vol, r: Math.max(8, Math.sqrt(item.vol) / 15), 
+            _area: item.area, _avgCPA: avgCPA, _avgKomp: avgKomp
         });
     });
 
-    const datasets = Object.values(datasetsObj);
-
-    // 4. Gambar Bubble Chart
     chartInstances.bubble = new Chart(ctx, {
         type: 'bubble',
-        data: { datasets: datasets },
+        data: { datasets: Object.values(datasetsObj) },
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
-                x: { 
-                    title: { display: true, text: '← Shell Lebih Mahal (Rp) | Selisih Harga | (Rp) Shell Lebih Murah →', font: {weight: 'bold'} },
-                    grid: { color: (ctx) => ctx.tick.value === 0 ? '#1E293B' : '#E2E8F0', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } // Garis tebal di angka 0
-                },
-                y: { 
-                    title: { display: true, text: 'Total Volume (Liter)', font: {weight: 'bold'} },
-                    beginAtZero: true
-                }
+                x: { title: { display: true, text: '← Shell Lebih Mahal (Rp) | Selisih Harga | (Rp) Shell Lebih Murah →', font: {weight: 'bold'} }, grid: { color: (ctx) => ctx.tick.value === 0 ? '#1E293B' : '#E2E8F0', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } },
+                y: { title: { display: true, text: 'Total Volume (Liter)', font: {weight: 'bold'} }, beginAtZero: true }
             },
             plugins: {
-                legend: { position: 'top' },
-                datalabels: { display: false }, // Matikan teks di dalam lingkaran agar rapi
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const d = context.raw;
-                            return [
-                                `Area: ${d._area} (Komp: ${context.dataset.label})`,
-                                `Volume: ${new Intl.NumberFormat('id-ID').format(d.y)} L`,
-                                `Avg Harga Shell: Rp ${new Intl.NumberFormat('id-ID').format(d._avgCPA)}`,
-                                `Avg Harga Komp: Rp ${new Intl.NumberFormat('id-ID').format(d._avgKomp)}`,
-                                `Selisih: Rp ${new Intl.NumberFormat('id-ID').format(d.x)}`
-                            ];
-                        }
-                    }
-                }
+                legend: { position: 'top' }, datalabels: { display: false }, 
+                tooltip: { callbacks: { label: function(context) { const d = context.raw; return [ `Area: ${d._area} (Komp: ${context.dataset.label})`, `Volume: ${new Intl.NumberFormat('id-ID').format(d.y)} L`, `Avg Harga Shell: Rp ${new Intl.NumberFormat('id-ID').format(d._avgCPA)}`, `Avg Harga Komp: Rp ${new Intl.NumberFormat('id-ID').format(d._avgKomp)}`, `Selisih: Rp ${new Intl.NumberFormat('id-ID').format(d.x)}` ]; } } }
             }
         }
     });
 }
 
-window.onscroll = function() {
-    const backToTopBtn = document.getElementById("backToTopBtn");
-    if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
-        backToTopBtn.style.display = "flex";
-    } else {
-        backToTopBtn.style.display = "none";
-    }
-};
+// --- PERBAIKAN 2: FUNGSI TREND FILTERING ---
+function processAndRenderTrend(provFilter = '') {
+    if (globalTrendData.length === 0) return;
 
-function scrollToTop() {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
+    // Filter by Area
+    let filteredData = globalTrendData;
+    if (provFilter !== '') {
+        filteredData = globalTrendData.filter(item => {
+            let prov = String(item['Provinsi'] || '').toLowerCase().trim();
+            return prov === provFilter.toLowerCase().trim();
+        });
+    }
+
+    // Kalkulasi rata-rata per bulan
+    let monthMap = {};
+    filteredData.forEach(row => {
+        let bulan = row[trendHeaders[0]]; 
+        if (!bulan) return;
+
+        if (!monthMap[bulan]) {
+            monthMap[bulan] = { count: 0, sums: {} };
+            for (let j = 2; j < trendHeaders.length; j++) { monthMap[bulan].sums[trendHeaders[j]] = 0; }
+        }
+        
+        monthMap[bulan].count++;
+        for (let j = 2; j < trendHeaders.length; j++) {
+            let brand = trendHeaders[j];
+            monthMap[bulan].sums[brand] += parseNum(row[brand]);
+        }
+    });
+
+    let labels = Object.keys(monthMap);
+    let datasetsObj = {};
+    for (let j = 2; j < trendHeaders.length; j++) {
+        let brand = trendHeaders[j];
+        datasetsObj[brand] = [];
+        labels.forEach(bulan => {
+            let avg = monthMap[bulan].count > 0 ? (monthMap[bulan].sums[brand] / monthMap[bulan].count) : null;
+            datasetsObj[brand].push(avg);
+        });
+    }
+
+    renderTrendChart(labels, datasetsObj);
+}
+
+function renderTrendChart(labels, datasetsObj) {
+    const canvas = document.getElementById('trendLineChart');
+    if (!canvas) return;
+    if(chartInstances.line) chartInstances.line.destroy();
+
+    const colors = { 'Shell': '#FFD500', 'Pertamina': '#DD0000', 'Castrol': '#10B981', 'Sefas': '#F59E0B', 'Idemitsu': '#3B82F6' };
+
+    const datasets = Object.keys(datasetsObj).map(brand => {
+        return {
+            label: brand, data: datasetsObj[brand],
+            borderColor: colors[brand] || '#64748B', backgroundColor: colors[brand] || '#64748B',
+            borderWidth: brand === 'Shell' ? 4 : 2, 
+            tension: 0.3, pointRadius: 4, pointHoverRadius: 7
+        };
+    });
+
+    chartInstances.line = new Chart(canvas.getContext('2d'), {
+        type: 'line', data: { labels: labels, datasets: datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, 
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }, datalabels: { display: false }, 
+                tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; if (context.parsed.y !== null) { label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(context.parsed.y); } return label; } } }
+            },
+            scales: { y: { title: { display: true, text: 'Harga Rata-Rata (Rp)', font: {weight: 'bold'} }, beginAtZero: false, grid: { borderDash: [4, 4] } }, x: { grid: { display: false } } }
+        }
     });
 }
 
 function showSkeletonLoading() {
+    // ... skeleton loader UI ... (Diringkas di kode blok agar tidak terlalu panjang)
     document.getElementById('kpi-volume').innerHTML = '<div class="skeleton skeleton-kpi"></div>';
     document.getElementById('kpi-accounts').innerHTML = '<div class="skeleton skeleton-kpi"></div>';
     document.getElementById('kpi-competitor').innerHTML = '<div class="skeleton skeleton-kpi"></div>';
-
     const tableBody = document.getElementById('table-body');
     tableBody.innerHTML = '';
     for(let i = 0; i < 5; i++) {
-        tableBody.innerHTML += `
-            <tr>
-                <td class="hide-mobile"><div class="skeleton skeleton-text" style="width: 80%;"></div></td>
-                <td class="hide-mobile"><div class="skeleton skeleton-text" style="width: 90%;"></div></td>
-                <td>
-                    <div class="skeleton skeleton-text" style="width: 100%;"></div>
-                    <div class="skeleton skeleton-text" style="width: 60%; height: 10px;"></div>
-                </td>
-                <td><div class="skeleton skeleton-text" style="width: 70%; margin: 0 auto;"></div></td>
-                <td class="hide-mobile">
-                    <div class="skeleton skeleton-text" style="width: 90%;"></div>
-                    <div class="skeleton skeleton-text" style="width: 50%; height: 10px;"></div>
-                </td>
-                <td><div class="skeleton skeleton-text" style="width: 80%;"></div></td>
-                <td><div class="skeleton skeleton-text" style="width: 80%;"></div></td>
-                <td class="hide-mobile">
-                    <div class="skeleton skeleton-text" style="width: 90%;"></div>
-                    <div class="skeleton skeleton-text" style="width: 70%; height: 10px;"></div>
-                </td>
-                <td><div class="skeleton skeleton-text" style="width: 100%;"></div></td>
-                <td><div class="skeleton skeleton-btn"></div></td>
-            </tr>
-        `;
+        tableBody.innerHTML += `<tr><td class="hide-mobile"><div class="skeleton skeleton-text" style="width: 80%;"></div></td><td class="hide-mobile"><div class="skeleton skeleton-text" style="width: 90%;"></div></td><td><div class="skeleton skeleton-text" style="width: 100%;"></div><div class="skeleton skeleton-text" style="width: 60%; height: 10px;"></div></td><td><div class="skeleton skeleton-text" style="width: 70%; margin: 0 auto;"></div></td><td class="hide-mobile"><div class="skeleton skeleton-text" style="width: 90%;"></div><div class="skeleton skeleton-text" style="width: 50%; height: 10px;"></div></td><td><div class="skeleton skeleton-text" style="width: 80%;"></div></td><td><div class="skeleton skeleton-text" style="width: 80%;"></div></td><td class="hide-mobile"><div class="skeleton skeleton-text" style="width: 90%;"></div><div class="skeleton skeleton-text" style="width: 70%; height: 10px;"></div></td><td><div class="skeleton skeleton-text" style="width: 100%;"></div></td><td><div class="skeleton skeleton-btn"></div></td></tr>`;
     }
 }
 
-// ==========================================
-// TRIGGER OTOMATIS SAAT HALAMAN DIBUKA
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    // Jalankan penarikan data secara otomatis tanpa harus diklik
-    fetchData(); 
-});
 
-// ==========================================
-// FUNGSI CUSTOM MODAL DETAIL INFO
-// ==========================================
+/* --------------------------------------------------------------------------
+   5. INTERACTION & LOGIC (Filter, Sort, Tabs)
+   -------------------------------------------------------------------------- */
+function switchTab(tabId, buttonElement) {
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    buttonElement.classList.add('active');
+}
+
+function sortTable(column) {
+    if (currentSort.column === column) { currentSort.asc = !currentSort.asc; } 
+    else { currentSort.column = column; currentSort.asc = true; }
+    doSort(column, currentSort.asc);
+}
+
+function doSort(col, isAsc) {
+    globalRawData.sort((a, b) => {
+        let valA = a[col]; let valB = b[col];
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        if (valA < valB) return isAsc ? -1 : 1;
+        if (valA > valB) return isAsc ? 1 : -1;
+        return 0;
+    });
+    filterTable();
+}
+
+function toggleRowsDisplay() {
+    isShowingAll = !isShowingAll;
+    renderTable(window.currentExportData); // Menggunakan data yang sedang aktif difilter
+}
+
+function filterTable() {
+    const query = document.getElementById('search-box').value.toLowerCase().trim();
+    const provF = document.getElementById('filter-prov').value.toLowerCase().trim();
+    const kompF = document.getElementById('filter-komp').value.toLowerCase().trim();
+
+    isShowingAll = false; // Reset tombol show more ke 5 baris saat ada filter baru
+
+    if (query === '' && provF === '' && kompF === '') {
+        renderTable();
+        updateKPIs(); 
+        if (globalWinLossData.length > 0) renderWinLossData(globalWinLossData);
+        processAndRenderTrend(); // Reset trend chart
+        return;
+    }
+
+    const filteredMain = globalRawData.filter(item => {
+        const safeStr = (str) => str ? str.toString().toLowerCase().trim() : '';
+        const matchQ = query === "" || safeStr(item.salesman).includes(query) || safeStr(item.provinsi).includes(query) || safeStr(item.customer).includes(query) || safeStr(item.sektor).includes(query) || safeStr(item.kompetitor).includes(query) || safeStr(item.skuShell).includes(query);
+        const matchP = provF === "" || safeStr(item.provinsi) === provF;
+        const matchK = kompF === "" || safeStr(item.kompetitor) === kompF;
+        return matchQ && matchP && matchK;
+    });
+    
+    renderTable(filteredMain);
+    updateKPIs(filteredMain); 
+
+    if (globalWinLossData.length > 0) {
+        const filteredWL = globalWinLossData.filter(item => {
+            const safeStr = (str) => str ? str.toString().toLowerCase().trim() : '';
+            const matchQ = query === "" || safeStr(item['Nama Customer']).includes(query) || safeStr(item['Keterangan']).includes(query);
+            const matchP = provF === "" || safeStr(item['Provinsi']) === provF;
+            const matchK = kompF === "" || safeStr(item['Kompetitor']) === kompF;
+            return matchQ && matchP && matchK;
+        });
+        renderWinLossData(filteredWL);
+    }
+
+    processAndRenderTrend(provF); // Update trend chart berdasarkan area
+}
+
 function showCustomModal(issue, info, top) {
     document.getElementById('modal-issue').textContent = issue || '-';
     document.getElementById('modal-info').textContent = info || '-';
@@ -750,123 +675,68 @@ function showCustomModal(issue, info, top) {
     document.getElementById('custom-modal').classList.add('show');
 }
 
-function closeCustomModal() {
-    document.getElementById('custom-modal').classList.remove('show');
-}
+function closeCustomModal() { document.getElementById('custom-modal').classList.remove('show'); }
+window.onclick = function(event) { const modal = document.getElementById('custom-modal'); if (event.target === modal) { closeCustomModal(); } };
 
-// Fitur tambahan: Tutup modal kalau user klik di area luar kotak putih
-window.onclick = function(event) {
-    const modal = document.getElementById('custom-modal');
-    if (event.target === modal) { closeCustomModal(); }
+window.onscroll = function() {
+    const backToTopBtn = document.getElementById("backToTopBtn");
+    if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) { backToTopBtn.style.display = "flex"; } 
+    else { backToTopBtn.style.display = "none"; }
 };
 
-// ==========================================
-// FUNGSI EXPORT KE CSV
-// ==========================================
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+
+/* --------------------------------------------------------------------------
+   6. EXPORT UTILITIES (CSV)
+   -------------------------------------------------------------------------- */
 function exportToCSV() {
     const data = window.currentExportData || globalRawData;
-    
-    if (data.length === 0) {
-        alert("Tidak ada data untuk diekspor.");
-        return;
-    }
+    if (data.length === 0) { alert("Tidak ada data untuk diekspor."); return; }
 
-    // 1. Buat Header Kolom CSV
     let csvContent = "Provinsi,Salesman,Customer / Akun,Sektor,Volume (L),Produk Shell,Harga Shell,Kompetitor,Produk Komp,Harga Komp,Selisih Harga,Issue Lapangan,Info Update,Terms of Payment (TOP)\n";
 
-    // 2. Format dan Masukkan Data
     data.forEach(item => {
-        // Fungsi untuk mengamankan teks (jika ada koma atau enter di dalam catatan lapangan)
-        const clean = (str) => {
-            let text = String(str || '-').replace(/"/g, '""'); // Amankan tanda kutip
-            return `"${text}"`; // Bungkus dengan kutip ganda agar koma di dalam teks tidak merusak kolom
-        };
-
+        const clean = (str) => `"${String(str || '-').replace(/"/g, '""')}"`;
         let selisih = item.hargaKomp - item.hargaCPA;
-
-        let row = [
-            clean(item.provinsi),
-            clean(item.salesman),
-            clean(item.customer),
-            clean(item.sektor),
-            item.volume,
-            clean(item.skuShell),
-            item.hargaCPA,
-            clean(item.kompetitor),
-            clean(item.skuKomp),
-            item.hargaKomp,
-            selisih,
-            clean(item.issue),
-            clean(item.info),
-            clean(item.top)
-        ];
-        
+        let row = [ clean(item.provinsi), clean(item.salesman), clean(item.customer), clean(item.sektor), item.volume, clean(item.skuShell), item.hargaCPA, clean(item.kompetitor), clean(item.skuKomp), item.hargaKomp, selisih, clean(item.issue), clean(item.info), clean(item.top) ];
         csvContent += row.join(",") + "\n";
     });
 
-    // 3. Proses Download File
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    
-    // Nama file dinamis dengan tanggal hari ini
-    const today = new Date().toISOString().split('T')[0];
-    link.setAttribute("download", `Market_Landscape_CPA_${today}.csv`);
-    
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    triggerDownload(csvContent, 'Market_Landscape_CPA');
 }
 
-// ==========================================
-// FUNGSI EXPORT WIN/LOSS KE CSV
-// ==========================================
 function exportWinLossToCSV() {
     const data = window.currentWLExportData || globalWinLossData;
-    
-    if (data.length === 0) {
-        alert("Tidak ada data Win/Loss untuk diekspor.");
-        return;
-    }
+    if (data.length === 0) { alert("Tidak ada data Win/Loss untuk diekspor."); return; }
 
-    // 1. Buat Header Kolom CSV (Sesuaikan dengan format tabel)
     let csvContent = "Nama Customer,Provinsi,Status Pipeline,Kompetitor,Volume (L),Status Remarketing,Keterangan\n";
 
-    // 2. Format dan Masukkan Data
     data.forEach(item => {
-        // Fungsi pengaman teks (Mencegah kolom berantakan jika ada koma di dalam kalimat/angka)
-        const clean = (str) => {
-            let text = String(str || '-').replace(/"/g, '""'); 
-            return `"${text}"`; 
-        };
-
-        let row = [
-            clean(item['Nama Customer']),
-            clean(item['Provinsi']),
-            clean(item['Status']),
-            clean(item['Kompetitor']),
-            clean(item['Volume (L)']), // Menggunakan clean() karena angka dari Excel sering mengandung koma desimal
-            clean(item['Remarketing']),
-            clean(item['Keterangan'])
-        ];
-        
+        const clean = (str) => `"${String(str || '-').replace(/"/g, '""')}"`;
+        let row = [ clean(item['Nama Customer']), clean(item['Provinsi']), clean(item['Status']), clean(item['Kompetitor']), clean(item['Volume (L)']), clean(item['Remarketing']), clean(item['Keterangan']) ];
         csvContent += row.join(",") + "\n";
     });
 
-    // 3. Proses Download File
+    triggerDownload(csvContent, 'WinLoss_Tracker_CPA');
+}
+
+function triggerDownload(csvContent, prefixName) {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    
-    // Nama file dinamis dengan tanggal
     const today = new Date().toISOString().split('T')[0];
-    link.setAttribute("download", `WinLoss_Tracker_CPA_${today}.csv`);
-    
+    link.setAttribute("download", `${prefixName}_${today}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
+
+/* --------------------------------------------------------------------------
+   7. INITIALIZATION
+   -------------------------------------------------------------------------- */
+document.addEventListener('DOMContentLoaded', () => {
+    fetchData(); 
+});
