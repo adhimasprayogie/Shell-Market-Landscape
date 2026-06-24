@@ -2,6 +2,7 @@ import { fetchData } from './api.js';
 import { switchTab, showCustomModal, closeCustomModal, scrollToTop } from './utils.js';
 import { sortTable, toggleRowsDisplay, filterTable } from './tab-main.js';
 import { exportToCSV, exportWinLossToCSV } from './export.js';
+import { renderOpsDashboard } from './tab-ops.js';
 
 // MENGEKSPOS FUNGSI KE HTML (Karena ES6 Modules terisolasi secara default)
 window.fetchData = fetchData;
