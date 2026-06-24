@@ -152,6 +152,28 @@ header {
 .refresh-btn { background: var(--light-bg); border: none; font-size: 18px; cursor: pointer; padding: 10px; border-radius: 10px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
 .refresh-btn:hover { background: var(--border-light); transform: rotate(180deg); }
 
+/* TOMBOL EXPORT CSV */
+.export-btn {
+    background-color: #10B981; /* Warna hijau senada dengan UI */
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.export-btn:hover { background-color: #059669; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+
+/* Penyesuaian di layar HP agar rapi */
+@media screen and (max-width: 768px) {
+    .export-btn { width: 100%; justify-content: center; }
+}
+
 /* TABLES - Clean Design */
 .table-container { 
     padding: 0; 
