@@ -2,6 +2,7 @@ import { state } from './state.js';
 import { formatVolume, formatRupiah } from './utils.js';
 import { renderPricingMatrix, processAndRenderTrend } from './tab-pricing.js';
 import { renderWinLossData } from './tab-winloss.js';
+import { renderOpsDashboard } from './tab-ops.js';
 
 export function updateKPIs(dataArray = state.globalRawData) {
     let totalVol = 0; let kompCount = {}; let uniqueCustomers = new Set();
@@ -136,15 +137,25 @@ export function filterTable() {
     const query = document.getElementById('search-box').value.toLowerCase().trim();
     const provF = document.getElementById('filter-prov').value.toLowerCase().trim();
     const kompF = document.getElementById('filter-komp').value.toLowerCase().trim();
+    
+    // 1. Tangkap value dari dropdown segmen yang baru kita buat
+    const segmenF = document.getElementById('filter-segmen') ? document.getElementById('filter-segmen').value.toLowerCase().trim() : '';
+    
     state.isShowingAll = false; 
 
-    if (query === '' && provF === '' && kompF === '') {
-        renderTable(); updateKPIs(); 
+    // JIKA TIDAK ADA FILTER SAMA SEKALI
+    if (query === '' && provF === '' && kompF === '' && segmenF === '') {
+        renderTable(); 
+        updateKPIs(); 
         if (state.globalWinLossData.length > 0) renderWinLossData(state.globalWinLossData);
         processAndRenderTrend(); 
+        
+        // Render tabel operasional tanpa filter
+        renderOpsDashboard(); 
         return;
     }
 
+    // Filter Main Data (Data Input)
     const filteredMain = state.globalRawData.filter(item => {
         const safeStr = (str) => str ? str.toString().toLowerCase().trim() : '';
         const matchQ = query === "" || safeStr(item.salesman).includes(query) || safeStr(item.provinsi).includes(query) || safeStr(item.customer).includes(query) || safeStr(item.sektor).includes(query) || safeStr(item.kompetitor).includes(query) || safeStr(item.skuShell).includes(query);
@@ -153,8 +164,10 @@ export function filterTable() {
         return matchQ && matchP && matchK;
     });
     
-    renderTable(filteredMain); updateKPIs(filteredMain); 
+    renderTable(filteredMain); 
+    updateKPIs(filteredMain); 
 
+    // Filter Win/Loss Data
     if (state.globalWinLossData.length > 0) {
         const filteredWL = state.globalWinLossData.filter(item => {
             const safeStr = (str) => str ? str.toString().toLowerCase().trim() : '';
@@ -165,5 +178,9 @@ export function filterTable() {
         });
         renderWinLossData(filteredWL);
     }
+    
     processAndRenderTrend(provF); 
+
+    // 2. Render ulang Operational Dashboard khusus berdasarkan segmen yang dipilih
+    renderOpsDashboard(segmenF); 
 }
