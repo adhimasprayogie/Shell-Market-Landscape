@@ -127,14 +127,15 @@ function fetchDsrData() {
 // ==========================================
 // FUNGSI EKSTRAK JSON SUPER KEBAl BANTING
 // ==========================================
-function extractSheetData(data) {
+function extractSheetData(data, useFirstRowAsHeader = true) {
     try {
+        if(data.includes('"status":"error"')) return [];
+        
         const json = JSON.parse(data.substring(47, data.length - 2));
         let headers = json.table.cols.map(c => c && c.label ? String(c.label).trim() : "");
         let startIndex = 0;
         
-        // Terkadang Google API melempar header ke dalam row[0], bukan label. Kode ini mengeceknya.
-        if (headers.join("").trim() === "" || headers.every(h => h.length <= 2)) { 
+        if (useFirstRowAsHeader && (headers.join("").trim() === "" || headers.every(h => h.length <= 2))) { 
             headers = json.table.rows[0].c.map(c => (c && c.v !== null) ? String(c.f !== undefined ? c.f : c.v).trim() : ""); 
             startIndex = 1; 
         }
@@ -144,21 +145,32 @@ function extractSheetData(data) {
             const row = json.table.rows[i];
             if (!row || !row.c) continue;
             
-            let isEmptyRow = true;
             let obj = {};
+            let hasValue = false;
+            
             for(let j = 0; j < headers.length; j++) { 
-                if (headers[j]) {
-                    let cell = row.c[j];
-                    let val = cell ? (cell.f !== undefined ? cell.f : cell.v) : null;
-                    obj[headers[j]] = val;
-                    if (val !== null && String(val).trim() !== "") isEmptyRow = false;
+                let key = headers[j] || `Col_${j}`; 
+                let cell = row.c[j];
+                
+                let val = null;
+                if (cell) {
+                    // KUNCI PERBAIKAN: Jika Google bilang ini adalah angka (number), 
+                    // langsung ambil angka murninya tanpa peduli format US/ID!
+                    if (typeof cell.v === 'number') {
+                        val = cell.v;
+                    } else {
+                        val = cell.f !== undefined ? cell.f : cell.v;
+                    }
                 }
+                
+                obj[key] = val;
+                if (val !== null && String(val).trim() !== "") hasValue = true;
             }
-            if (!isEmptyRow) arr.push(obj);
+            if (hasValue) arr.push(obj);
         }
         return arr;
     } catch (e) {
-        console.error("Gagal parsing JSON Spreadsheet:", e);
+        console.error("Gagal parsing JSON:", e);
         return [];
     }
 }
