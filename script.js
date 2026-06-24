@@ -245,6 +245,9 @@ function renderTable(filteredData = null) {
     const tableBody = document.getElementById('table-body');
     tableBody.innerHTML = '';
     const dataToRender = filteredData || globalRawData;
+
+    // --- TAMBAHAN UNTUK FITUR EXPORT ---
+    window.currentExportData = dataToRender;
     
     const btn = document.getElementById('toggle-rows-btn');
     if (!filteredData && dataToRender.length > 5) { btn.style.display = 'block'; } 
@@ -419,6 +422,10 @@ function renderCharts(data) {
 }
 
 function renderWinLossData(dataArray) {
+
+    // --- TAMBAHAN UNTUK MENANGKAP DATA EXPORT ---
+    window.currentWLExportData = dataArray;
+
     const tbody = document.getElementById('winloss-body');
     if (!tbody) return;
     tbody.innerHTML = ''; 
@@ -752,3 +759,114 @@ window.onclick = function(event) {
     const modal = document.getElementById('custom-modal');
     if (event.target === modal) { closeCustomModal(); }
 };
+
+// ==========================================
+// FUNGSI EXPORT KE CSV
+// ==========================================
+function exportToCSV() {
+    const data = window.currentExportData || globalRawData;
+    
+    if (data.length === 0) {
+        alert("Tidak ada data untuk diekspor.");
+        return;
+    }
+
+    // 1. Buat Header Kolom CSV
+    let csvContent = "Provinsi,Salesman,Customer / Akun,Sektor,Volume (L),Produk Shell,Harga Shell,Kompetitor,Produk Komp,Harga Komp,Selisih Harga,Issue Lapangan,Info Update,Terms of Payment (TOP)\n";
+
+    // 2. Format dan Masukkan Data
+    data.forEach(item => {
+        // Fungsi untuk mengamankan teks (jika ada koma atau enter di dalam catatan lapangan)
+        const clean = (str) => {
+            let text = String(str || '-').replace(/"/g, '""'); // Amankan tanda kutip
+            return `"${text}"`; // Bungkus dengan kutip ganda agar koma di dalam teks tidak merusak kolom
+        };
+
+        let selisih = item.hargaKomp - item.hargaCPA;
+
+        let row = [
+            clean(item.provinsi),
+            clean(item.salesman),
+            clean(item.customer),
+            clean(item.sektor),
+            item.volume,
+            clean(item.skuShell),
+            item.hargaCPA,
+            clean(item.kompetitor),
+            clean(item.skuKomp),
+            item.hargaKomp,
+            selisih,
+            clean(item.issue),
+            clean(item.info),
+            clean(item.top)
+        ];
+        
+        csvContent += row.join(",") + "\n";
+    });
+
+    // 3. Proses Download File
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    
+    // Nama file dinamis dengan tanggal hari ini
+    const today = new Date().toISOString().split('T')[0];
+    link.setAttribute("download", `Market_Landscape_CPA_${today}.csv`);
+    
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// ==========================================
+// FUNGSI EXPORT WIN/LOSS KE CSV
+// ==========================================
+function exportWinLossToCSV() {
+    const data = window.currentWLExportData || globalWinLossData;
+    
+    if (data.length === 0) {
+        alert("Tidak ada data Win/Loss untuk diekspor.");
+        return;
+    }
+
+    // 1. Buat Header Kolom CSV (Sesuaikan dengan format tabel)
+    let csvContent = "Nama Customer,Provinsi,Status Pipeline,Kompetitor,Volume (L),Status Remarketing,Keterangan\n";
+
+    // 2. Format dan Masukkan Data
+    data.forEach(item => {
+        // Fungsi pengaman teks (Mencegah kolom berantakan jika ada koma di dalam kalimat/angka)
+        const clean = (str) => {
+            let text = String(str || '-').replace(/"/g, '""'); 
+            return `"${text}"`; 
+        };
+
+        let row = [
+            clean(item['Nama Customer']),
+            clean(item['Provinsi']),
+            clean(item['Status']),
+            clean(item['Kompetitor']),
+            clean(item['Volume (L)']), // Menggunakan clean() karena angka dari Excel sering mengandung koma desimal
+            clean(item['Remarketing']),
+            clean(item['Keterangan'])
+        ];
+        
+        csvContent += row.join(",") + "\n";
+    });
+
+    // 3. Proses Download File
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    
+    // Nama file dinamis dengan tanggal
+    const today = new Date().toISOString().split('T')[0];
+    link.setAttribute("download", `WinLoss_Tracker_CPA_${today}.csv`);
+    
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
