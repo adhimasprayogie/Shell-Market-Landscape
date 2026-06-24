@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Market Landscape - PT CPA</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -48,6 +50,7 @@
         </div>
 
         <div id="tab-dashboard" class="tab-content active">
+            
             <div class="kpi-grid">
                 <div class="kpi-card">
                     <h4>Total Potensi Volume</h4>
@@ -66,7 +69,8 @@
             <div class="section-header-row">
                 <h2 class="section-title">🚨 Executive Summary (Retail Area)</h2>
             </div>
-            <div class="alert-grid" id="alert-container"></div>
+            <div class="alert-grid" id="alert-container">
+                </div>
 
             <div class="chart-section">
                 <div class="chart-box">
@@ -96,7 +100,6 @@
                         <option value="">Semua Kompetitor</option>
                     </select>
                     <input type="text" id="search-box" class="search-input" placeholder="Cari akun, sales, produk..." onkeyup="filterTable()">
-
                     <button class="export-btn" onclick="exportToCSV()" title="Download Data ke CSV">📥 Export</button>
                 </div>
             </div>
@@ -117,7 +120,8 @@
                             <th>Info Detail</th>
                         </tr>
                     </thead>
-                    <tbody id="table-body"></tbody>
+                    <tbody id="table-body">
+                        </tbody>
                 </table>
             </div>
 
@@ -195,7 +199,8 @@
                             <th>Keterangan / Alasan</th>
                         </tr>
                     </thead>
-                    <tbody id="winloss-body"></tbody>
+                    <tbody id="winloss-body">
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -214,9 +219,21 @@
                     <canvas id="pricingBubbleChart"></canvas>
                 </div>
             </div>
+
+            <div class="chart-box" style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 5px;">Tren Riwayat Harga Rata-Rata (MoM)</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+                    Pergerakan rata-rata harga pasar dari waktu ke waktu berdasarkan temuan lapangan.
+                </p>
+                <div class="canvas-container" style="height: 350px;">
+                    <canvas id="trendLineChart"></canvas>
+                </div>
+            </div>
         </div>
 
-    </div> <footer>
+    </div> 
+    
+    <footer>
         © 2026 Developed by <span>Business Analyst - CPA 01</span>. All rights reserved.
     </footer>
 
@@ -226,13 +243,11 @@
         </svg>
     </button>
 
-    <script src="script.js"></script>
-
     <div id="custom-modal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
                 <h3>Detail Informasi Lapangan</h3>
-                <button class="close-modal-btn" onclick="closeCustomModal()" title="Tutup">&times;</button>
+                <button class="close-modal-btn" onclick="closeCustomModal()" title="Tutup">×</button>
             </div>
             <div class="modal-body">
                 <div class="modal-item">
@@ -262,6 +277,8 @@
             </div>
         </div>
     </div>
-    
+
+    <script src="script.js"></script>
+
 </body>
 </html>
