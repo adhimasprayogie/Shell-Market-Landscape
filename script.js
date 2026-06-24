@@ -136,6 +136,11 @@ function fetchData() {
     const headerBtn = document.querySelector('.header-refresh-btn');
     const controlBtn = document.querySelector('.refresh-btn');
     
+    document.getElementById('toggle-rows-btn').style.display = 'none';
+    showSkeletonLoading();
+    fetchAlerts();
+    fetchWinLossData();
+    
     const statusBadge = document.getElementById('live-status');
     const headerRefreshBtn = document.querySelector('.header-refresh-btn');
 
@@ -315,7 +320,7 @@ function filterTable() {
     // JIKA TIDAK ADA FILTER (Tampilkan Semua)
     if (query === '' && provF === '' && kompF === '') {
         renderTable();
-        updateKPIs; 
+        updateKPIs(); 
         if (globalWinLossData.length > 0) renderWinLossData(globalWinLossData);
         return;
     }
