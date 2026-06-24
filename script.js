@@ -133,10 +133,8 @@ function fetchWinLossData() {
 }
 
 function fetchData() {
-    document.getElementById('toggle-rows-btn').style.display = 'none';
-    showSkeletonLoading();
-    fetchAlerts();
-    fetchWinLossData();
+    const headerBtn = document.querySelector('.header-refresh-btn');
+    const controlBtn = document.querySelector('.refresh-btn');
     
     const statusBadge = document.getElementById('live-status');
     const headerRefreshBtn = document.querySelector('.header-refresh-btn');
@@ -202,11 +200,12 @@ function fetchData() {
         });
 }
 
-function updateKPIs() {
+function updateKPIs(dataArray = globalRawData) {
     let totalVol = 0;
     let kompCount = {};
     let uniqueCustomers = new Set();
-    globalRawData.forEach(d => {
+
+    dataArray.forEach(d => {
         totalVol += d.volume;
         let k = d.kompetitor.trim();
         if(k && k !== '-') { kompCount[k] = (kompCount[k] || 0) + 1; }
@@ -315,7 +314,8 @@ function filterTable() {
 
     // JIKA TIDAK ADA FILTER (Tampilkan Semua)
     if (query === '' && provF === '' && kompF === '') {
-        renderTable(); 
+        renderTable();
+        updateKPIs; 
         if (globalWinLossData.length > 0) renderWinLossData(globalWinLossData);
         return;
     }
@@ -339,7 +339,8 @@ function filterTable() {
     });
     
     // Render Ulang Tabel Utama & Pricing Matrix Chart
-    renderTable(filteredMain); 
+    renderTable(filteredMain);
+    updateKPIs(filteredMain); 
 
     // 2. FILTER DATA WIN/LOSS
     if (globalWinLossData.length > 0) {
