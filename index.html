@@ -47,6 +47,7 @@
             <button class="tab-btn" onclick="switchTab('tab-map', this)">🗺️ Sebaran Kompetitor</button>
             <button class="tab-btn" onclick="switchTab('tab-tracker', this)">📈 Win/Loss Tracker</button>
             <button class="tab-btn" onclick="switchTab('tab-pricing', this)">💰 Pricing Matrix</button>
+            <button class="tab-btn" onclick="switchTab('tab-operations', this)">📈 Team Achievement & Ops</button>
         </div>
 
         <div id="tab-dashboard" class="tab-content active">
@@ -95,6 +96,11 @@
                 <div class="filter-group">
                     <select id="filter-prov" class="select-input" onchange="filterTable()">
                         <option value="">Semua Provinsi</option>
+                    </select>
+                    <select id="filter-segmen" class="select-input" onchange="filterTable()">
+                        <option value="">Semua Segmen</option>
+                        <option value="smelter">Smelter</option>
+                        <option value="non smelter">Non Smelter</option>
                     </select>
                     <select id="filter-komp" class="select-input" onchange="filterTable()">
                         <option value="">Semua Kompetitor</option>
@@ -274,6 +280,74 @@
             </div>
             <div class="modal-footer">
                 <button class="toggle-btn" style="padding: 10px 24px; box-shadow: none;" onclick="closeCustomModal()">Tutup</button>
+            </div>
+        </div>
+
+        <div id="tab-operations" class="tab-content">
+            <div class="section-header-row">
+                <h2 class="section-title">📊 Team Achievement & Operational Status</h2>
+            </div>
+            
+            <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 25px;">
+                <div class="kpi-card" style="border-top: 4px solid var(--cpa-blue);">
+                    <h4>PO On Hand</h4>
+                    <div class="kpi-value" id="ops-po-onhand" style="color: var(--cpa-blue);">0 L</div>
+                    <div class="kpi-trend" style="color: var(--text-muted); font-size:12px; margin-top:5px;">Barang belum DO</div>
+                </div>
+                <div class="kpi-card" style="border-top: 4px solid #F59E0B;">
+                    <h4>OS Invoice</h4>
+                    <div class="kpi-value" id="ops-os-invoice" style="color: #F59E0B;">0 L</div>
+                    <div class="kpi-trend" style="color: var(--text-muted); font-size:12px; margin-top:5px;">Sudah DO, belum Invoice</div>
+                </div>
+                <div class="kpi-card" style="border-top: 4px solid #10B981;">
+                    <h4>Total Delivered</h4>
+                    <div class="kpi-value" id="ops-delivered" style="color: #10B981;">0 L</div>
+                    <div class="kpi-trend" style="color: var(--text-muted); font-size:12px; margin-top:5px;">Sudah terbit Invoice</div>
+                </div>
+                <div class="kpi-card" style="border-top: 4px solid var(--shell-red);">
+                    <h4>All Volume YTD</h4>
+                    <div class="kpi-value" id="ops-achievement" style="color: var(--shell-red);">0%</div>
+                    <div class="kpi-trend" id="ops-growth" style="color: var(--text-muted); font-size:12px; margin-top:5px;">Growth YoY: 0%</div>
+                </div>
+            </div>
+
+            <div class="chart-box" style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px;">DSR Target Achievement (Bulan Ini)</h3>
+                <div class="table-container" style="max-height: 400px; padding: 0;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead style="position: sticky; top: 0; z-index: 5;">
+                            <tr>
+                                <th style="padding: 12px 16px;">Salesman</th>
+                                <th style="padding: 12px 16px;">Segmen</th>
+                                <th style="width: 25%; padding: 12px 16px;">All Volume</th>
+                                <th style="width: 25%; padding: 12px 16px;">Premium</th>
+                                <th style="width: 25%; padding: 12px 16px;">Gadus</th>
+                            </tr>
+                        </thead>
+                        <tbody id="achievement-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 30px; padding: 0;">
+                <div style="padding: 15px 20px; background: #FFF7ED; border-left: 4px solid #F59E0B; margin-bottom: 0px; font-weight: bold; border-radius: 4px 4px 0 0;">⚠️ Action Required: Outstanding Orders</div>
+                <table id="ops-table">
+                    <thead style="position: sticky; top: 0; z-index: 5;">
+                        <tr>
+                            <th>Bulan</th>
+                            <th>Customer</th>
+                            <th>DSR</th>
+                            <th>No PO</th>
+                            <th>No DO</th>
+                            <th>Vol. (L)</th>
+                            <th>Status Order</th>
+                            <th>Remarks (Admin)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ops-body">
+                        </tbody>
+                </table>
             </div>
         </div>
     </div>
