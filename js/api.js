@@ -3,24 +3,19 @@ import { showSkeletonLoading, parseNum } from './utils.js';
 import { updateKPIs, populateDropdowns, doSort } from './tab-main.js';
 import { renderWinLossData } from './tab-winloss.js';
 import { processAndRenderTrend } from './tab-pricing.js';
-import { renderOpsDashboard } from './tab-ops.js'; // <-- Import statis agar tidak diblokir browser
+import { renderOpsDashboard } from './tab-ops.js'; 
 
-const url = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.targetSheet)}`;
-const alertUrl = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.alertSheet)}`;
-const winLossUrl = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.winLossSheet)}`;
-const trendUrl = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.trendSheet)}`;
-const opsUrl = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.opsSheet)}`;
-const dsrUrl = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(config.dsrSheet)}`;
+const baseUrl = `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/gviz/tq?tqx=out:json`;
 
 export function fetchData() {
     document.getElementById('toggle-rows-btn').style.display = 'none';
     showSkeletonLoading();
     
-    fetchAlerts();
-    fetchWinLossData();
-    fetchTrendData();
-    fetchOpsData(); // Tarik data operasional
-    
+    fetchMainData();
+    fetchSecondaryData();
+}
+
+function fetchMainData() {
     const statusBadge = document.getElementById('live-status');
     const headerRefreshBtn = document.querySelector('.header-refresh-btn');
 
@@ -28,11 +23,16 @@ export function fetchData() {
     statusBadge.style.backgroundColor = '#F59E0B';
     if (headerRefreshBtn) headerRefreshBtn.classList.add('spinning');
 
-    const noCacheUrl = url + '&_=' + new Date().getTime();
+    const noCacheUrl = `${baseUrl}&sheet=${encodeURIComponent(config.targetSheet)}&_=${new Date().getTime()}`;
+    
     fetch(noCacheUrl).then(res => res.text()).then(data => {
         const json = JSON.parse(data.substring(47, data.length - 2));
         state.globalRawData = [];
-        const getVal = (cells, idx) => (cells[idx] && cells[idx].v !== null) ? cells[idx].v : '-';
+        
+        const getVal = (cells, idx) => {
+            if (!cells || !cells[idx]) return '-';
+            return cells[idx].v !== null ? cells[idx].v : '-';
+        };
 
         json.table.rows.forEach((row, index) => {
             if(index === 0) return; 
@@ -46,7 +46,7 @@ export function fetchData() {
                 issue: getVal(cells, 12), info: getVal(cells, 13)          
             });
         });
-
+        
         const now = new Date();
         const timeString = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WITA';
         statusBadge.innerHTML = `● LIVE & SYNCED <span id="last-sync-time">Update: ${timeString}</span>`;
@@ -58,79 +58,76 @@ export function fetchData() {
         doSort('volume', false); 
     }).catch(err => {
         console.error('Error fetching Main Data:', err);
+        statusBadge.innerHTML = '● SYNC FAILED';
+        statusBadge.style.backgroundColor = '#EF4444';
+        if (headerRefreshBtn) headerRefreshBtn.classList.remove('spinning');
     });
 }
 
-function fetchAlerts() {
-    const noCacheAlertUrl = alertUrl + '&_=' + new Date().getTime();
-    fetch(noCacheAlertUrl).then(res => res.text()).then(data => {
-        const json = JSON.parse(data.substring(47, data.length - 2));
-        document.getElementById('alert-container').innerHTML = ''; 
-        json.table.rows.forEach((row, index) => {
-            if(index === 0) return; 
-            const cells = row.c;
-            if (!cells || !cells[0]) return;
-            const tipe = cells[0]?.v || '🟡';
-            const judul = cells[1]?.v || 'Isu Baru';
-            const deskripsi = cells[2]?.v || 'Detail isu belum tersedia.';
-            const isWarning = tipe.includes('🟡') ? 'warning' : '';
-            document.getElementById('alert-container').innerHTML += `<div class="alert-card ${isWarning}"><h3>${tipe} ${judul}</h3><p>${deskripsi}</p></div>`;
-        });
-    }).catch(err => console.error(err));
-}
+function fetchSecondaryData() {
+    fetch(`${baseUrl}&sheet=${encodeURIComponent(config.alertSheet)}&_=${new Date().getTime()}`)
+        .then(res => res.text())
+        .then(data => {
+            // PERBAIKAN: Parameter kedua diganti menjadi 'true' agar baris pertama (Header Excel) dilewati
+            const arr = extractSheetData(data, true); 
+            document.getElementById('alert-container').innerHTML = ''; 
+            arr.forEach(row => {
+                let keys = Object.keys(row);
+                if (keys.length > 1 && row[keys[1]] && String(row[keys[1]]).trim() !== "") {
+                    let tipe = row[keys[0]] || '🟡';
+                    let judul = row[keys[1]];
+                    let desc = row[keys[2]] || '';
+                    document.getElementById('alert-container').innerHTML += `<div class="alert-card ${tipe.includes('🟡') ? 'warning' : ''}"><h3>${tipe} ${judul}</h3><p>${desc}</p></div>`;
+                }
+            });
+        }).catch(e => console.error("Alerts error", e));
 
-function fetchWinLossData() {
-    const noCacheUrl = winLossUrl + '&_=' + new Date().getTime();
-    fetch(noCacheUrl).then(res => res.text()).then(data => {
-        state.globalWinLossData = extractSheetData(data);
-        renderWinLossData(state.globalWinLossData); 
-    }).catch(err => console.error(err));
-}
+    fetch(`${baseUrl}&sheet=${encodeURIComponent(config.winLossSheet)}&_=${new Date().getTime()}`)
+        .then(res => res.text())
+        .then(data => {
+            state.globalWinLossData = extractSheetData(data);
+            renderWinLossData(state.globalWinLossData); 
+        }).catch(e => console.error("WinLoss error", e));
 
-function fetchTrendData() {
-    const noCacheUrl = trendUrl + '&_=' + new Date().getTime();
-    fetch(noCacheUrl).then(res => res.text()).then(data => {
-        state.globalTrendData = extractSheetData(data);
-        state.trendHeaders = Object.keys(state.globalTrendData[0] || {});
-        processAndRenderTrend(); 
-    }).catch(err => console.error(err));
+    fetch(`${baseUrl}&sheet=${encodeURIComponent(config.trendSheet)}&_=${new Date().getTime()}`)
+        .then(res => res.text())
+        .then(data => {
+            state.globalTrendData = extractSheetData(data);
+            state.trendHeaders = Object.keys(state.globalTrendData[0] || {});
+            processAndRenderTrend(); 
+        }).catch(e => console.error("Trend error", e));
+
+    fetchOpsData();
 }
 
 export function fetchOpsData() {
-    fetch(opsUrl + '&_=' + new Date().getTime()).then(res => res.text()).then(data => {
-        if(data.includes('"status":"error"')) throw new Error("Tab OperationalTracker tidak ditemukan");
-        state.globalOpsData = extractSheetData(data);
-        fetchDsrData(); 
-    }).catch(err => {
-        console.error(err);
-        state.globalOpsData = []; 
-        fetchDsrData(); // Tetap jalan meskipun Ops error agar DSR bisa jalan
-    });
+    fetch(`${baseUrl}&sheet=${encodeURIComponent(config.opsSheet)}&_=${new Date().getTime()}`)
+        .then(res => res.text())
+        .then(data => {
+            state.globalOpsData = extractSheetDataByIndex(data);
+            fetch(`${baseUrl}&sheet=${encodeURIComponent(config.dsrSheet)}&_=${new Date().getTime()}`)
+                .then(res2 => res2.text())
+                .then(data2 => {
+                    state.globalDsrData = extractSheetDataByIndex(data2);
+                    const segmenF = document.getElementById('filter-segmen') ? document.getElementById('filter-segmen').value.toLowerCase().trim() : '';
+                    renderOpsDashboard(segmenF);
+                })
+                .catch(err => {
+                    console.error("DSR Error:", err);
+                    state.globalDsrData = [];
+                    const segmenF = document.getElementById('filter-segmen') ? document.getElementById('filter-segmen').value.toLowerCase().trim() : '';
+                    renderOpsDashboard(segmenF);
+                });
+        })
+        .catch(err => {
+            console.error("Ops Error:", err);
+            state.globalOpsData = []; 
+        });
 }
 
-function fetchDsrData() {
-    fetch(dsrUrl + '&_=' + new Date().getTime()).then(res => res.text()).then(data => {
-        if(data.includes('"status":"error"')) throw new Error("Tab TargetDSR tidak ditemukan");
-        state.globalDsrData = extractSheetData(data);
-        
-        // Eksekusi render setelah KEDUA data sukses
-        const segmenF = document.getElementById('filter-segmen') ? document.getElementById('filter-segmen').value.toLowerCase().trim() : '';
-        renderOpsDashboard(segmenF);
-    }).catch(err => {
-        console.error(err);
-        state.globalDsrData = [];
-        const segmenF = document.getElementById('filter-segmen') ? document.getElementById('filter-segmen').value.toLowerCase().trim() : '';
-        renderOpsDashboard(segmenF);
-    });
-}
-
-// ==========================================
-// FUNGSI EKSTRAK JSON SUPER KEBAl BANTING
-// ==========================================
 function extractSheetData(data, useFirstRowAsHeader = true) {
     try {
         if(data.includes('"status":"error"')) return [];
-        
         const json = JSON.parse(data.substring(47, data.length - 2));
         let headers = json.table.cols.map(c => c && c.label ? String(c.label).trim() : "");
         let startIndex = 0;
@@ -144,25 +141,15 @@ function extractSheetData(data, useFirstRowAsHeader = true) {
         for (let i = startIndex; i < json.table.rows.length; i++) {
             const row = json.table.rows[i];
             if (!row || !row.c) continue;
-            
-            let obj = {};
-            let hasValue = false;
-            
+            let obj = {}; let hasValue = false;
             for(let j = 0; j < headers.length; j++) { 
                 let key = headers[j] || `Col_${j}`; 
                 let cell = row.c[j];
-                
                 let val = null;
                 if (cell) {
-                    // KUNCI PERBAIKAN: Jika Google bilang ini adalah angka (number), 
-                    // langsung ambil angka murninya tanpa peduli format US/ID!
-                    if (typeof cell.v === 'number') {
-                        val = cell.v;
-                    } else {
-                        val = cell.f !== undefined ? cell.f : cell.v;
-                    }
+                    if (typeof cell.v === 'number') val = cell.v;
+                    else val = cell.f !== undefined ? cell.f : cell.v;
                 }
-                
                 obj[key] = val;
                 if (val !== null && String(val).trim() !== "") hasValue = true;
             }
@@ -171,6 +158,34 @@ function extractSheetData(data, useFirstRowAsHeader = true) {
         return arr;
     } catch (e) {
         console.error("Gagal parsing JSON:", e);
+        return [];
+    }
+}
+
+function extractSheetDataByIndex(data) {
+    try {
+        if(data.includes('"status":"error"')) return [];
+        const json = JSON.parse(data.substring(47, data.length - 2));
+        let arr = [];
+        for (let i = 1; i < json.table.rows.length; i++) { 
+            const row = json.table.rows[i];
+            if (!row || !row.c) continue;
+            let obj = {}; let hasValue = false;
+            for(let j = 0; j < row.c.length; j++) { 
+                let cell = row.c[j];
+                let val = null;
+                if (cell) {
+                    if (typeof cell.v === 'number') val = cell.v;
+                    else val = cell.f !== undefined ? cell.f : cell.v;
+                }
+                obj[j] = val; 
+                if (val !== null && String(val).trim() !== "") hasValue = true;
+            }
+            if (hasValue) arr.push(obj);
+        }
+        return arr;
+    } catch (e) {
+        console.error("Gagal parsing JSON By Index:", e);
         return [];
     }
 }
