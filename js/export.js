@@ -21,10 +21,35 @@ export function exportWinLossToCSV() {
     let csvContent = "Nama Customer,Provinsi,Status Pipeline,Kompetitor,Volume (L),Status Remarketing,Keterangan\n";
     data.forEach(item => {
         const clean = (str) => `"${String(str || '-').replace(/"/g, '""')}"`;
-        let row = [ clean(item['Nama Customer']), clean(item['Provinsi']), clean(item['Status']), clean(item['Kompetitor']), clean(item['Volume (L)']), clean(item['Remarketing']), clean(item['Keterangan']) ];
+        // WinLoss memakai Header kembali
+        let row = [ clean(item['Nama Customer']), clean(item['Provinsi']), clean(item['Status Pipeline'] || item['Status']), clean(item['Kompetitor']), clean(item['Volume (L)']), clean(item['Status Remarketing'] || item['Remarketing']), clean(item['Keterangan / Alasan'] || item['Keterangan']) ];
         csvContent += row.join(",") + "\n";
     });
     triggerDownload(csvContent, 'WinLoss_Tracker_CPA');
+}
+
+export function exportOpsToCSV() {
+    const data = state.globalOpsData;
+    if (!data || data.length === 0) { 
+        alert("Tidak ada data operasional untuk diekspor."); 
+        return; 
+    }
+
+    let csvContent = "Bulan,Provinsi,Segmen,DSR Name,Nama Customer,Sektor,Brand Produk,Tier Produk,No PO,No DO,No Invoice,Volume PO (L),Volume Delivered (L),Remarks\n";
+    data.forEach(item => {
+        let cols = Object.values(item);
+        if(cols.length < 13) return; 
+        
+        const clean = (str) => `"${String(str || '-').replace(/"/g, '""')}"`;
+        // Ops tetap pakai Index
+        let row = [
+            clean(cols[0]), clean(cols[1]), clean(cols[2]), clean(cols[3]), clean(cols[4]), 
+            clean(cols[5]), clean(cols[6]), clean(cols[7]), clean(cols[8]), clean(cols[9]), 
+            clean(cols[10]), clean(cols[11]), clean(cols[12]), clean(cols[13])
+        ];
+        csvContent += row.join(",") + "\n";
+    });
+    triggerDownload(csvContent, 'Operational_Tracker_CPA');
 }
 
 function triggerDownload(csvContent, prefixName) {
